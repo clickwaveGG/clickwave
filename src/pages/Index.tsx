@@ -35,11 +35,11 @@ const TEAM_DATA = [
   },
   {
     title: "Leonardo",
-    subtitle: "Co-Fundador & Estrategista de Marketing",
+    subtitle: "Co-Fundador, Web Designer & Estrategista de Marketing",
     content: (
       <div>
         <p className="text-white/70 text-sm md:text-base font-light mb-8">
-          Co-fundador da Clickwave e a mente por trás da identidade visual e da estratégia de marca. Traça as rotas de ataque, conecta design e persuasão, e garante que cada campanha carregue propósito e impacto letal.
+          Co-fundador da Clickwave e a mente que une marketing e tecnologia. Domina desde a construção de sistemas e páginas de alta conversão até o planejamento estratégico de cada campanha — traçando rotas de ataque com clareza e garantindo que cada ação tenha propósito e resultado.
         </p>
         <div className="w-full sm:w-3/4 md:w-1/2">
           <img
