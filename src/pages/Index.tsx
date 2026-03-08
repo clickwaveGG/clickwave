@@ -122,7 +122,12 @@ export default function Index() {
       <div className="relative z-10 flex flex-col flex-1 p-4 md:p-8 max-w-[1600px] mx-auto w-full">
         
         {/* Header */}
-        <header className="flex items-center justify-between py-2 px-4 md:py-3 md:px-6 rounded-full backdrop-blur-md bg-white/10 border border-white/20 w-full shadow-lg">
+        <motion.header
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, ease: "easeOut" }}
+          className="flex items-center justify-between py-2 px-4 md:py-3 md:px-6 rounded-full backdrop-blur-md bg-white/10 border border-white/20 w-full shadow-lg"
+        >
           <div className="flex items-center gap-1.5 md:gap-2">
             <Sparkles className="w-4 h-4 md:w-5 md:h-5 text-brand-orange" />
             <span className="font-medium text-sm md:text-lg tracking-wide">Clickwave</span>
@@ -141,12 +146,17 @@ export default function Index() {
           <button className="bg-brand-orange text-white px-4 py-1.5 md:px-6 md:py-2.5 rounded-full text-[10px] md:text-sm font-medium flex items-center gap-1.5 md:gap-2 hover:bg-orange-600 transition-colors">
             Login <ArrowRight className="w-3 h-3 md:w-4 md:h-4" />
           </button>
-        </header>
+        </motion.header>
 
         {/* Main Hero Content */}
         <main className="flex-1 flex flex-col justify-start items-center md:items-start text-center md:text-left pt-4 md:pt-24 mt-2 md:mt-0">
           <div className="max-w-3xl w-full">
-            <h1 className="text-4xl md:text-6xl font-serif leading-[1.05] tracking-tight mb-64 md:mb-20">
+            <motion.h1
+              initial={{ opacity: 0, y: 30 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.8, delay: 0.2, ease: "easeOut" }}
+              className="text-4xl md:text-6xl font-serif leading-[1.05] tracking-tight mb-64 md:mb-20"
+            >
               Marketing é <br />
               <span className="italic flex items-center justify-center md:justify-start gap-4">
                 <div className="w-8 h-8 md:w-12 md:h-12 rounded-full border border-dashed border-white/50 flex items-center justify-center animate-[spin_10s_linear_infinite]">
@@ -154,17 +164,27 @@ export default function Index() {
                 </div>
                 guerra.
               </span>
-            </h1>
+            </motion.h1>
             
-            <p className="hidden md:block text-sm text-white/60 mb-10 max-w-md mx-auto md:mx-0 leading-relaxed font-mono tracking-wide uppercase border-l border-brand-orange/30 pl-4 py-1">
+            <motion.p
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.7, delay: 0.5, ease: "easeOut" }}
+              className="hidden md:block text-sm text-white/60 mb-10 max-w-md mx-auto md:mx-0 leading-relaxed font-mono tracking-wide uppercase border-l border-brand-orange/30 pl-4 py-1"
+            >
               // E nós somos a sua linha de frente. Estratégia implacável, clareza de marca e execução tática para dominar o seu mercado.
-            </p>
+            </motion.p>
 
-            <button className="group relative overflow-hidden bg-brand-orange text-white px-5 py-2.5 md:px-8 md:py-4 rounded-full text-xs md:text-base font-mono uppercase tracking-widest hover:bg-orange-600 transition-all duration-300 shadow-[0_0_40px_rgba(255,87,34,0.2)]">
+            <motion.button
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, delay: 0.7, ease: "easeOut" }}
+              className="group relative overflow-hidden bg-brand-orange text-white px-5 py-2.5 md:px-8 md:py-4 rounded-full text-xs md:text-base font-mono uppercase tracking-widest hover:bg-orange-600 transition-all duration-300 shadow-[0_0_40px_rgba(255,87,34,0.2)]"
+            >
               <span className="relative z-10 flex items-center gap-2">
                 Começar Agora! <div className="w-1.5 h-1.5 bg-white rounded-full animate-pulse"></div>
               </span>
-            </button>
+            </motion.button>
           </div>
         </main>
 
