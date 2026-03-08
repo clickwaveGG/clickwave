@@ -2,6 +2,7 @@ import React from 'react';
 import { ArrowRight, Sparkles, Crosshair } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { Timeline } from '../components/Timeline';
+import kauanImg from '@/assets/kauan-cabral.png';
 
 const LOGOS = [
   { src: "https://upload.wikimedia.org/wikipedia/commons/a/a9/Amazon_logo.svg", alt: "Amazon" },
@@ -65,6 +66,24 @@ const TEAM_DATA = [
             alt="Joao Victor"
             className="rounded-lg w-full h-auto shadow-[0_0_20px_rgba(0,0,0,0.5)] transition-all duration-500"
             referrerPolicy="no-referrer"
+          />
+        </div>
+      </div>
+    ),
+  },
+  {
+    title: "Kauan Cabral",
+    subtitle: "Especialista em Automações e N8N",
+    content: (
+      <div>
+        <p className="text-white/70 text-sm md:text-base font-light mb-8">
+          O arquiteto das máquinas invisíveis. Constrói sistemas de automação implacáveis que trabalham 24/7, eliminando o trabalho manual e transformando processos complexos em operações cirúrgicas de eficiência absoluta.
+        </p>
+        <div className="w-full sm:w-3/4 md:w-1/2">
+          <img
+            src={kauanImg}
+            alt="Kauan Cabral"
+            className="rounded-lg w-full h-auto shadow-[0_0_20px_rgba(0,0,0,0.5)] transition-all duration-500"
           />
         </div>
       </div>
