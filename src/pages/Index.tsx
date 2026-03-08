@@ -240,7 +240,7 @@ export default function Index() {
               <span>V.2.5</span>
             </div>
           </div>
-        </div>
+        </motion.div>
 
       </div>
     </section>
