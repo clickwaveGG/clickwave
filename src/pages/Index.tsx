@@ -91,6 +91,7 @@ const TEAM_DATA = [
   },
 ];
 
+export default function Index() {
   return (
     <div className="bg-brand-black text-white font-sans selection:bg-brand-orange selection:text-white">
       {/* Hero Section */}
