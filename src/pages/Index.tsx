@@ -16,11 +16,11 @@ const LOGOS = [
 const TEAM_DATA = [
   {
     title: "Pedro Antônio",
-    subtitle: "Fundador, CEO e Estrategista de Tráfego",
+    subtitle: "Co-Fundador & Estrategista de Tráfego",
     content: (
       <div>
         <p className="text-white/70 text-sm md:text-base font-light mb-8">
-          Uma das mentes por trás da Clickwave e um dos líderes do nosso exército. Especialista em gestão de tráfego e estratégias de marketing de alta performance, focado em dominar o mercado.
+          Co-fundador da Clickwave e um dos comandantes à frente do exército. Especialista em gestão de tráfego e estratégias de alta performance, transforma dados em domínio de mercado com precisão cirúrgica.
         </p>
         <div className="w-full sm:w-3/4 md:w-1/2">
           <img
@@ -35,11 +35,11 @@ const TEAM_DATA = [
   },
   {
     title: "Leonardo",
-    subtitle: "Web Designer e Estrategista de Marketing",
+    subtitle: "Co-Fundador & Estrategista de Marketing",
     content: (
       <div>
         <p className="text-white/70 text-sm md:text-base font-light mb-8">
-          Uma das mentes e estrategistas do marketing. Responsável por traçar as rotas de ataque e garantir que cada campanha tenha um propósito claro e letal.
+          Co-fundador da Clickwave e a mente por trás da identidade visual e da estratégia de marca. Traça as rotas de ataque, conecta design e persuasão, e garante que cada campanha carregue propósito e impacto letal.
         </p>
         <div className="w-full sm:w-3/4 md:w-1/2">
           <img
