@@ -39,7 +39,7 @@ const TEAM_DATA = [
     content: (
       <div>
         <p className="text-white/70 text-sm md:text-base font-light mb-8">
-          Co-fundador da Clickwave e a mente que une marketing e tecnologia. Domina desde a construção de sistemas e páginas de alta conversão até o planejamento estratégico de cada campanha — traçando rotas de ataque com clareza e garantindo que cada ação tenha propósito e resultado.
+          Co-fundador da Clickwave e a mente que une marketing e tecnologia. Domina desde a construção de sistemas e páginas de alta conversão até o planejamento estratégico de cada campanha, traçando rotas de ataque com clareza e garantindo que cada ação tenha propósito e resultado.
         </p>
         <div className="w-full sm:w-3/4 md:w-1/2">
           <img
