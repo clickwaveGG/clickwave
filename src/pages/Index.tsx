@@ -3,6 +3,7 @@ import { ArrowRight, Sparkles, Crosshair } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { Timeline } from '../components/Timeline';
 import { ArsenalSection } from '../components/ArsenalSection';
+import { ServicesSection } from '../components/ServicesSection';
 import kauanImg from '@/assets/kauan-cabral.png';
 
 const LOGOS = [
@@ -347,6 +348,9 @@ export default function Index() {
 
     {/* Arsenal Strategy Section */}
     <ArsenalSection />
+
+    {/* Services Section */}
+    <ServicesSection />
     </div>
   );
 }
