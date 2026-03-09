@@ -1,11 +1,12 @@
 import React from 'react';
-import { ArrowRight, Sparkles, Crosshair } from 'lucide-react';
+import { ArrowRight, Crosshair } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Timeline } from '../components/Timeline';
 import { ArsenalSection } from '../components/ArsenalSection';
 import { ServicesSection } from '../components/ServicesSection';
 import kauanImg from '@/assets/kauan-cabral.png';
+import clickwaveLogo from '@/assets/clickwave-logo.png';
 
 const LOGOS = [
   { src: "https://upload.wikimedia.org/wikipedia/commons/a/a9/Amazon_logo.svg", alt: "Amazon" },

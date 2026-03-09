@@ -55,8 +55,8 @@ export default function Login() {
         className="relative z-10 w-full max-w-md"
       >
         {/* Logo */}
-        <div className="flex items-center justify-center gap-2 mb-10">
-          <Sparkles className="w-5 h-5 text-brand-orange" />
+        <div className="flex items-center justify-center gap-3 mb-10">
+          <img src={clickwaveLogo} alt="Clickwave" className="w-10 h-10 object-contain" />
           <span className="font-medium text-lg tracking-wide text-white">Clickwave</span>
         </div>
 
