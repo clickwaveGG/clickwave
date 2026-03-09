@@ -57,7 +57,7 @@ export default function Login() {
         {/* Logo */}
         <div className="flex items-center justify-center gap-3 mb-10">
           <img src={clickwaveLogo} alt="Clickwave" className="h-16 w-auto" />
-          <span className="font-medium text-xl tracking-wide text-white">Clickwave</span>
+          <span className="font-serif italic text-xl tracking-wide text-white">Clickwave</span>
         </div>
 
         {/* Glass Card */}

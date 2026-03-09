@@ -134,7 +134,7 @@ export default function Index() {
         >
           <div className="flex items-center gap-2 md:gap-3">
             <img src={clickwaveLogo} alt="Clickwave" className="h-8 md:h-10 w-auto" />
-            <span className="font-medium text-sm md:text-lg tracking-wide">Clickwave</span>
+            <span className="font-serif italic text-sm md:text-lg tracking-wide">Clickwave</span>
           </div>
           
           <nav className="hidden md:flex items-center gap-8 text-sm text-white/90">
