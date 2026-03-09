@@ -133,7 +133,7 @@ export default function Index() {
           className="flex items-center justify-between py-2 px-4 md:py-3 md:px-6 rounded-full backdrop-blur-md bg-white/10 border border-white/20 w-full shadow-lg"
         >
           <div className="flex items-center gap-2 md:gap-3">
-            <img src={clickwaveLogo} alt="Clickwave" className="w-7 h-7 md:w-9 md:h-9 object-contain" />
+            <img src={clickwaveLogo} alt="Clickwave" className="w-10 h-10 md:w-12 md:h-12 object-contain" />
             <span className="font-medium text-sm md:text-lg tracking-wide">Clickwave</span>
           </div>
           
