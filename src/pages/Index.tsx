@@ -2,6 +2,7 @@ import React from 'react';
 import { ArrowRight, Sparkles, Crosshair } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { Timeline } from '../components/Timeline';
+import { ArsenalSection } from '../components/ArsenalSection';
 import kauanImg from '@/assets/kauan-cabral.png';
 
 const LOGOS = [
@@ -296,6 +297,9 @@ export default function Index() {
         </ul>
       </div>
     </section>
+
+    {/* Arsenal Strategy Section */}
+    <ArsenalSection />
 
     {/* Team Timeline Section */}
     <section className="bg-brand-black border-t border-white/5 relative z-10">
