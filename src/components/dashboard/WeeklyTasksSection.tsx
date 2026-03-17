@@ -1,63 +1,123 @@
 import { useState } from 'react';
-import { CalendarCheck, CheckCircle2, Circle, ChevronDown, ChevronUp } from 'lucide-react';
+import { CalendarCheck, CheckCircle2, Circle, ChevronDown, ChevronUp, Plus, Trash2, Pencil, X, Check } from 'lucide-react';
+import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/integrations/supabase/client';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 
 const DAYS = ['Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado', 'Domingo'];
 
-const WEEKLY_TASKS = [
-  { id: 1, label: 'Verificar desempenho das campanhas ativas (CPA, CTR, ROAS)' },
-  { id: 2, label: 'Analisar criativos — pausar os de baixa performance' },
-  { id: 3, label: 'Revisar orçamentos e redistribuir budget entre conjuntos' },
-  { id: 4, label: 'Checar públicos e audiências — ajustar segmentação se necessário' },
-  { id: 5, label: 'Responder leads e verificar qualidade dos formulários' },
-  { id: 6, label: 'Atualizar relatório de métricas do cliente' },
-  { id: 7, label: 'Testar novos criativos / copies para A/B testing' },
-];
-
 function getDayIndex(): number {
   const d = new Date().getDay();
-  return d === 0 ? 6 : d - 1; // Monday=0 ... Sunday=6
+  return d === 0 ? 6 : d - 1;
 }
 
-function getStorageKey(dayIdx: number) {
+function getWeekStart(): string {
   const now = new Date();
-  const startOfWeek = new Date(now);
-  startOfWeek.setDate(now.getDate() - getDayIndex());
-  const weekKey = startOfWeek.toISOString().slice(0, 10);
-  return `weekly-tasks-${weekKey}-${dayIdx}`;
-}
-
-function loadChecked(dayIdx: number): Set<number> {
-  try {
-    const raw = localStorage.getItem(getStorageKey(dayIdx));
-    return raw ? new Set(JSON.parse(raw)) : new Set();
-  } catch { return new Set(); }
-}
-
-function saveChecked(dayIdx: number, checked: Set<number>) {
-  localStorage.setItem(getStorageKey(dayIdx), JSON.stringify([...checked]));
+  const dayIdx = getDayIndex();
+  const start = new Date(now);
+  start.setDate(now.getDate() - dayIdx);
+  return start.toISOString().slice(0, 10);
 }
 
 export function WeeklyTasksSection() {
+  const { user } = useAuth();
+  const queryClient = useQueryClient();
   const today = getDayIndex();
   const [selectedDay, setSelectedDay] = useState(today);
-  const [checked, setChecked] = useState<Set<number>>(() => loadChecked(today));
   const [expanded, setExpanded] = useState(true);
+  const [newTaskLabel, setNewTaskLabel] = useState('');
+  const [addingTask, setAddingTask] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editLabel, setEditLabel] = useState('');
 
-  const handleDayChange = (idx: number) => {
-    setSelectedDay(idx);
-    setChecked(loadChecked(idx));
-  };
+  const weekStart = getWeekStart();
 
-  const toggle = (taskId: number) => {
-    const next = new Set(checked);
-    if (next.has(taskId)) next.delete(taskId); else next.add(taskId);
-    setChecked(next);
-    saveChecked(selectedDay, next);
-  };
+  const { data: templates = [] } = useQuery({
+    queryKey: ['weekly-templates', user?.id],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from('weekly_task_templates')
+        .select('*')
+        .eq('user_id', user!.id)
+        .order('sort_order', { ascending: true });
+      return data || [];
+    },
+    enabled: !!user,
+  });
 
-  const doneCount = checked.size;
-  const totalCount = WEEKLY_TASKS.length;
-  const progress = Math.round((doneCount / totalCount) * 100);
+  const { data: checks = [] } = useQuery({
+    queryKey: ['weekly-checks', user?.id, weekStart, selectedDay],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from('weekly_task_checks')
+        .select('*')
+        .eq('user_id', user!.id)
+        .eq('week_start', weekStart)
+        .eq('day_index', selectedDay);
+      return data || [];
+    },
+    enabled: !!user,
+  });
+
+  const checkedIds = new Set(checks.map((c: any) => c.template_id));
+
+  const toggleMutation = useMutation({
+    mutationFn: async (templateId: string) => {
+      if (checkedIds.has(templateId)) {
+        await supabase
+          .from('weekly_task_checks')
+          .delete()
+          .eq('template_id', templateId)
+          .eq('week_start', weekStart)
+          .eq('day_index', selectedDay);
+      } else {
+        await supabase.from('weekly_task_checks').insert({
+          user_id: user!.id,
+          template_id: templateId,
+          week_start: weekStart,
+          day_index: selectedDay,
+        });
+      }
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['weekly-checks'] }),
+  });
+
+  const addMutation = useMutation({
+    mutationFn: async (label: string) => {
+      const maxOrder = templates.length > 0 ? Math.max(...templates.map((t: any) => t.sort_order)) + 1 : 0;
+      await supabase.from('weekly_task_templates').insert({
+        user_id: user!.id,
+        label,
+        sort_order: maxOrder,
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['weekly-templates'] });
+      setNewTaskLabel('');
+      setAddingTask(false);
+    },
+  });
+
+  const updateMutation = useMutation({
+    mutationFn: async ({ id, label }: { id: string; label: string }) => {
+      await supabase.from('weekly_task_templates').update({ label }).eq('id', id);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['weekly-templates'] });
+      setEditingId(null);
+    },
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: async (id: string) => {
+      await supabase.from('weekly_task_templates').delete().eq('id', id);
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['weekly-templates'] }),
+  });
+
+  const doneCount = checkedIds.size;
+  const totalCount = templates.length;
+  const progress = totalCount > 0 ? Math.round((doneCount / totalCount) * 100) : 0;
 
   return (
     <div>
@@ -83,7 +143,7 @@ export function WeeklyTasksSection() {
             {DAYS.map((day, idx) => (
               <button
                 key={day}
-                onClick={() => handleDayChange(idx)}
+                onClick={() => setSelectedDay(idx)}
                 className={`text-[10px] font-mono px-3 py-1.5 rounded-lg border transition-all whitespace-nowrap ${
                   idx === selectedDay
                     ? 'border-brand-orange/40 bg-brand-orange/10 text-brand-orange'
@@ -113,27 +173,103 @@ export function WeeklyTasksSection() {
 
           {/* Task list */}
           <div className="space-y-1">
-            {WEEKLY_TASKS.map(task => {
-              const isDone = checked.has(task.id);
+            {templates.map((task: any) => {
+              const isDone = checkedIds.has(task.id);
+              const isEditing = editingId === task.id;
+
+              if (isEditing) {
+                return (
+                  <div key={task.id} className="flex items-center gap-2 px-3 py-2.5">
+                    <input
+                      type="text"
+                      value={editLabel}
+                      onChange={e => setEditLabel(e.target.value)}
+                      onKeyDown={e => {
+                        if (e.key === 'Enter' && editLabel.trim()) updateMutation.mutate({ id: task.id, label: editLabel.trim() });
+                        if (e.key === 'Escape') setEditingId(null);
+                      }}
+                      className="flex-1 bg-white/5 border border-white/10 rounded-lg px-3 py-1.5 text-sm text-white/80 outline-none focus:border-brand-orange/40"
+                      autoFocus
+                    />
+                    <button onClick={() => editLabel.trim() && updateMutation.mutate({ id: task.id, label: editLabel.trim() })} className="text-emerald-400 hover:text-emerald-300">
+                      <Check className="w-4 h-4" />
+                    </button>
+                    <button onClick={() => setEditingId(null)} className="text-white/30 hover:text-white/50">
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
+                );
+              }
+
               return (
-                <button
+                <div
                   key={task.id}
-                  onClick={() => toggle(task.id)}
                   className={`w-full flex items-start gap-3 px-3 py-2.5 rounded-xl text-left transition-all hover:bg-white/[0.03] group ${
                     isDone ? 'opacity-50' : ''
                   }`}
                 >
-                  {isDone
-                    ? <CheckCircle2 className="w-4 h-4 mt-0.5 text-emerald-400 shrink-0" />
-                    : <Circle className="w-4 h-4 mt-0.5 text-white/20 group-hover:text-white/40 shrink-0" />
-                  }
-                  <span className={`text-sm ${isDone ? 'text-white/30 line-through' : 'text-white/70'}`}>
+                  <button onClick={() => toggleMutation.mutate(task.id)} className="mt-0.5 shrink-0">
+                    {isDone
+                      ? <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                      : <Circle className="w-4 h-4 text-white/20 group-hover:text-white/40" />
+                    }
+                  </button>
+                  <span className={`text-sm flex-1 ${isDone ? 'text-white/30 line-through' : 'text-white/70'}`}>
                     {task.label}
                   </span>
-                </button>
+                  <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <button
+                      onClick={() => { setEditingId(task.id); setEditLabel(task.label); }}
+                      className="text-white/20 hover:text-white/50"
+                    >
+                      <Pencil className="w-3.5 h-3.5" />
+                    </button>
+                    <button
+                      onClick={() => deleteMutation.mutate(task.id)}
+                      className="text-white/20 hover:text-red-400"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                </div>
               );
             })}
           </div>
+
+          {/* Add task */}
+          {addingTask ? (
+            <div className="flex items-center gap-2 px-3">
+              <input
+                type="text"
+                value={newTaskLabel}
+                onChange={e => setNewTaskLabel(e.target.value)}
+                onKeyDown={e => {
+                  if (e.key === 'Enter' && newTaskLabel.trim()) addMutation.mutate(newTaskLabel.trim());
+                  if (e.key === 'Escape') { setAddingTask(false); setNewTaskLabel(''); }
+                }}
+                placeholder="Nova tarefa semanal..."
+                className="flex-1 bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-white/80 placeholder:text-white/20 outline-none focus:border-brand-orange/40"
+                autoFocus
+              />
+              <button
+                onClick={() => newTaskLabel.trim() && addMutation.mutate(newTaskLabel.trim())}
+                className="text-emerald-400 hover:text-emerald-300"
+              >
+                <Check className="w-4 h-4" />
+              </button>
+              <button onClick={() => { setAddingTask(false); setNewTaskLabel(''); }} className="text-white/30 hover:text-white/50">
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+          ) : (
+            <button
+              onClick={() => setAddingTask(true)}
+              className="flex items-center gap-2 text-white/25 hover:text-white/50 text-xs font-mono px-3 py-1.5 transition-colors"
+            >
+              <Plus className="w-3.5 h-3.5" />
+              Adicionar tarefa
+            </button>
+          )}
         </div>
       )}
     </div>
