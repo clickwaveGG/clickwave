@@ -31,6 +31,7 @@ const App = () => (
             <Route path="/dashboard/team" element={<ProtectedRoute><TeamSpace /></ProtectedRoute>} />
             <Route path="/dashboard/calendar" element={<ProtectedRoute><CalendarPage /></ProtectedRoute>} />
             <Route path="/dashboard/colleagues" element={<ProtectedRoute><Colleagues /></ProtectedRoute>} />
+            <Route path="/dashboard/clients" element={<ProtectedRoute><ClientsPage /></ProtectedRoute>} />
             <Route path="/dashboard/admin" element={<ProtectedRoute><AdminPanel /></ProtectedRoute>} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />

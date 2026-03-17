@@ -21,6 +21,7 @@ const menuItems = [
   { title: 'Espaço da Equipe', url: '/dashboard/team', icon: UsersRound },
   { title: 'Calendário Geral', url: '/dashboard/calendar', icon: CalendarDays },
   { title: 'Meus Colegas', url: '/dashboard/colleagues', icon: Users },
+  { title: 'Clientes', url: '/dashboard/clients', icon: Building2 },
 ];
 
 const adminItems = [
