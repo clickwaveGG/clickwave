@@ -6,7 +6,7 @@ import { supabase } from '@/integrations/supabase/client';
 import clickwaveLogo from '@/assets/clickwave-logo.png';
 
 export default function Login() {
-  const [email, setEmail] = useState('');
+  const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
