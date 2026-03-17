@@ -38,27 +38,74 @@ export type Database = {
         }
         Relationships: []
       }
+      client_services: {
+        Row: {
+          client_id: string
+          created_at: string
+          id: string
+          price: number | null
+          quantity_per_month: number | null
+          responsible_id: string | null
+          service_name: string
+        }
+        Insert: {
+          client_id: string
+          created_at?: string
+          id?: string
+          price?: number | null
+          quantity_per_month?: number | null
+          responsible_id?: string | null
+          service_name: string
+        }
+        Update: {
+          client_id?: string
+          created_at?: string
+          id?: string
+          price?: number | null
+          quantity_per_month?: number | null
+          responsible_id?: string | null
+          service_name?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_services_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       clients: {
         Row: {
           contact_info: string | null
           created_at: string
           created_by: string
           id: string
+          is_recurring: boolean
           name: string
+          notes: string | null
+          size: string
         }
         Insert: {
           contact_info?: string | null
           created_at?: string
           created_by: string
           id?: string
+          is_recurring?: boolean
           name: string
+          notes?: string | null
+          size?: string
         }
         Update: {
           contact_info?: string | null
           created_at?: string
           created_by?: string
           id?: string
+          is_recurring?: boolean
           name?: string
+          notes?: string | null
+          size?: string
         }
         Relationships: []
       }
