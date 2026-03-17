@@ -197,6 +197,68 @@ export type Database = {
         }
         Relationships: []
       }
+      weekly_task_checks: {
+        Row: {
+          checked: boolean
+          created_at: string
+          day_index: number
+          id: string
+          template_id: string
+          user_id: string
+          week_start: string
+        }
+        Insert: {
+          checked?: boolean
+          created_at?: string
+          day_index: number
+          id?: string
+          template_id: string
+          user_id: string
+          week_start: string
+        }
+        Update: {
+          checked?: boolean
+          created_at?: string
+          day_index?: number
+          id?: string
+          template_id?: string
+          user_id?: string
+          week_start?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "weekly_task_checks_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "weekly_task_templates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      weekly_task_templates: {
+        Row: {
+          created_at: string
+          id: string
+          label: string
+          sort_order: number
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          label: string
+          sort_order?: number
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          label?: string
+          sort_order?: number
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
