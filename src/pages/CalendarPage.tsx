@@ -173,7 +173,7 @@ export default function CalendarPage() {
               <p className="text-[9px] text-white/20 font-mono pl-1">+{tasks.length - 3} mais</p>
             )}
           </div>
-        </div>
+        </button>
       );
     }
 
