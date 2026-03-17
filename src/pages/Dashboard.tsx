@@ -76,9 +76,11 @@ export default function Dashboard() {
           Olá, <span className="italic">{firstName}.</span>
         </h1>
         <p className="text-white/40 text-sm font-mono mt-2">
-          {profile?.position
-            ? `${profile.position} — campanhas, métricas e clientes em um só lugar`
-            : 'Seus projetos web & CRM em um só lugar'}
+          {profile?.position === 'Gestor de Tráfego' && 'Campanhas, métricas e clientes em um só lugar'}
+          {profile?.position === 'Videomaker' && 'Gravações, edições e entregas audiovisuais em um só lugar'}
+          {profile?.position === 'Gestor de Automações' && 'Fluxos, chatbots e integrações em um só lugar'}
+          {profile?.position === 'Designer' && 'Criações, artes e identidades visuais em um só lugar'}
+          {!profile?.position && 'Seus projetos e tarefas em um só lugar'}
         </p>
       </div>
 
