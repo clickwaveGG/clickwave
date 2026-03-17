@@ -2,8 +2,9 @@ import { useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { useQueryClient } from '@tanstack/react-query';
-import { Plus, Trash2, X, Pencil, Check, FileText, ChevronDown, ChevronUp } from 'lucide-react';
+import { Plus, Trash2, X, Pencil, Check, FileText } from 'lucide-react';
 import { toast } from 'sonner';
+import { TaskDetailModal } from './TaskDetailModal';
 
 interface Task {
   id: string;
@@ -12,6 +13,7 @@ interface Task {
   priority: string;
   due_date: string | null;
   description: string | null;
+  client_name: string | null;
   assigned_to: string | null;
   created_by: string;
   is_team_task: boolean;
@@ -38,13 +40,7 @@ export function KanbanBoard({ tasks }: { tasks: Task[] }) {
   const [addingTo, setAddingTo] = useState<string | null>(null);
   const [newTitle, setNewTitle] = useState('');
   const [newPriority, setNewPriority] = useState('medium');
-  const [editingId, setEditingId] = useState<string | null>(null);
-  const [editTitle, setEditTitle] = useState('');
-  const [editStatus, setEditStatus] = useState('');
-  const [editDescription, setEditDescription] = useState('');
-  const [expandedId, setExpandedId] = useState<string | null>(null);
-  const [editingContextId, setEditingContextId] = useState<string | null>(null);
-  const [contextDraft, setContextDraft] = useState('');
+  const [selectedTask, setSelectedTask] = useState<Task | null>(null);
 
   const invalidate = () => qc.invalidateQueries({ queryKey: ['my-tasks', user?.id] });
 
@@ -65,43 +61,10 @@ export function KanbanBoard({ tasks }: { tasks: Task[] }) {
     invalidate();
   };
 
-  const deleteTask = async (id: string) => {
+  const deleteTask = async (e: React.MouseEvent, id: string) => {
+    e.stopPropagation();
     await supabase.from('tasks').delete().eq('id', id);
     invalidate();
-  };
-
-  const startEdit = (task: Task) => {
-    setEditingId(task.id);
-    setEditTitle(task.title);
-    setEditStatus(task.status);
-    setEditDescription(task.description || '');
-  };
-
-  const saveEdit = async () => {
-    if (!editingId || !editTitle.trim()) return;
-    await supabase.from('tasks').update({
-      title: editTitle.trim(),
-      status: editStatus,
-      description: editDescription.trim() || null,
-    }).eq('id', editingId);
-    setEditingId(null);
-    invalidate();
-  };
-
-  const saveContext = async (taskId: string) => {
-    await supabase.from('tasks').update({ description: contextDraft.trim() || null }).eq('id', taskId);
-    setEditingContextId(null);
-    invalidate();
-  };
-
-  const toggleExpand = (taskId: string) => {
-    setExpandedId(prev => prev === taskId ? null : taskId);
-    setEditingContextId(null);
-  };
-
-  const startEditContext = (task: Task) => {
-    setEditingContextId(task.id);
-    setContextDraft(task.description || '');
   };
 
   return (
@@ -169,109 +132,38 @@ export function KanbanBoard({ tasks }: { tasks: Task[] }) {
                 {colTasks.map(task => (
                   <div
                     key={task.id}
-                    className={`group rounded-xl border border-white/10 bg-white/[0.03] p-3 ${task.status === 'done' ? 'opacity-50' : ''}`}
+                    onClick={() => setSelectedTask(task)}
+                    className={`group rounded-xl border border-white/10 bg-white/[0.03] p-3 cursor-pointer hover:border-white/20 hover:bg-white/[0.05] transition-all ${task.status === 'done' ? 'opacity-50' : ''}`}
                   >
-                    {editingId === task.id ? (
-                      <div className="space-y-2">
-                        <input
-                          autoFocus
-                          value={editTitle}
-                          onChange={e => setEditTitle(e.target.value)}
-                          onKeyDown={e => e.key === 'Enter' && saveEdit()}
-                          className="w-full bg-transparent border-b border-white/10 pb-1 text-sm text-white outline-none focus:border-brand-orange/40"
-                        />
-                        <select
-                          value={editStatus}
-                          onChange={e => setEditStatus(e.target.value)}
-                          className="bg-white/5 border border-white/10 rounded text-xs text-white/60 px-2 py-1 outline-none"
-                        >
-                          {STATUS_COLUMNS.map(s => (
-                            <option key={s.key} value={s.key} className="bg-brand-black">{s.label}</option>
-                          ))}
-                        </select>
-                        <textarea
-                          value={editDescription}
-                          onChange={e => setEditDescription(e.target.value)}
-                          placeholder="Contexto interno da tarefa..."
-                          rows={3}
-                          className="w-full bg-white/5 border border-white/10 rounded text-xs text-white/70 px-2 py-1.5 outline-none focus:border-brand-orange/30 placeholder:text-white/20 resize-none"
-                        />
-                        <div className="flex gap-2">
-                          <button onClick={saveEdit} className="text-brand-orange"><Check className="w-3.5 h-3.5" /></button>
-                          <button onClick={() => setEditingId(null)} className="text-white/20"><X className="w-3.5 h-3.5" /></button>
-                        </div>
-                      </div>
-                    ) : (
-                      <>
-                        <div className="flex items-start justify-between gap-2">
-                          <p className={`text-sm text-white ${task.status === 'done' ? 'line-through' : ''}`}>{task.title}</p>
-                          <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
-                            <button onClick={() => toggleExpand(task.id)} className={`transition-colors ${expandedId === task.id ? 'text-brand-orange' : task.description ? 'text-white/30' : 'text-white/20'} hover:text-brand-orange`}>
-                              <FileText className="w-3 h-3" />
-                            </button>
-                            <button onClick={() => startEdit(task)} className="text-white/20 hover:text-brand-orange transition-colors">
-                              <Pencil className="w-3 h-3" />
-                            </button>
-                            <button onClick={() => deleteTask(task.id)} className="text-white/20 hover:text-red-400 transition-colors">
-                              <Trash2 className="w-3 h-3" />
-                            </button>
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-2 mt-2">
-                          <span className={`text-[9px] font-mono px-1.5 py-0.5 rounded border ${
-                            task.priority === 'high' ? 'border-red-500/30 text-red-400 bg-red-500/10'
-                              : task.priority === 'medium' ? 'border-orange-500/30 text-orange-400 bg-orange-500/10'
-                              : 'border-white/10 text-white/30'
-                          }`}>
-                            {task.priority === 'high' ? 'ALTA' : task.priority === 'medium' ? 'MÉDIA' : 'BAIXA'}
-                          </span>
-                          {task.description && (
-                            <FileText className="w-2.5 h-2.5 text-white/20" />
-                          )}
-                          {task.due_date && (
-                            <span className={`text-[9px] font-mono ${
-                              new Date(task.due_date).getTime() - Date.now() < 48 * 60 * 60 * 1000 ? 'text-red-400' : 'text-white/20'
-                            }`}>
-                              {new Date(task.due_date).toLocaleDateString('pt-BR')}
-                            </span>
-                          )}
-                        </div>
-
-                        {/* Contexto interno expandido */}
-                        {expandedId === task.id && (
-                          <div className="mt-3 pt-3 border-t border-white/5">
-                            <div className="flex items-center justify-between mb-1.5">
-                              <span className="text-[9px] font-mono uppercase tracking-wider text-white/30">Contexto Interno</span>
-                              {editingContextId !== task.id && (
-                                <button onClick={() => startEditContext(task)} className="text-white/20 hover:text-brand-orange transition-colors">
-                                  <Pencil className="w-2.5 h-2.5" />
-                                </button>
-                              )}
-                            </div>
-                            {editingContextId === task.id ? (
-                              <div className="space-y-2">
-                                <textarea
-                                  autoFocus
-                                  value={contextDraft}
-                                  onChange={e => setContextDraft(e.target.value)}
-                                  placeholder="Adicione notas, links, contexto..."
-                                  rows={3}
-                                  className="w-full bg-white/5 border border-white/10 rounded text-xs text-white/70 px-2 py-1.5 outline-none focus:border-brand-orange/30 placeholder:text-white/20 resize-none"
-                                />
-                                <div className="flex gap-2">
-                                  <button onClick={() => saveContext(task.id)} className="text-brand-orange"><Check className="w-3 h-3" /></button>
-                                  <button onClick={() => setEditingContextId(null)} className="text-white/20"><X className="w-3 h-3" /></button>
-                                </div>
-                              </div>
-                            ) : (
-                              <p className="text-xs text-white/40 whitespace-pre-wrap leading-relaxed">
-                                {task.description || <span className="italic text-white/15">Sem contexto adicionado</span>}
-                              </p>
-                            )}
-                          </div>
-                        )}
-                      </>
-                    )}
+                    <div className="flex items-start justify-between gap-2">
+                      <p className={`text-sm text-white ${task.status === 'done' ? 'line-through' : ''}`}>{task.title}</p>
+                      <button
+                        onClick={(e) => deleteTask(e, task.id)}
+                        className="text-white/20 hover:text-red-400 transition-colors opacity-0 group-hover:opacity-100 shrink-0"
+                      >
+                        <Trash2 className="w-3 h-3" />
+                      </button>
+                    </div>
+                    <div className="flex items-center gap-2 mt-2">
+                      <span className={`text-[9px] font-mono px-1.5 py-0.5 rounded border ${
+                        task.priority === 'high' ? 'border-red-500/30 text-red-400 bg-red-500/10'
+                          : task.priority === 'medium' ? 'border-orange-500/30 text-orange-400 bg-orange-500/10'
+                          : 'border-white/10 text-white/30'
+                      }`}>
+                        {task.priority === 'high' ? 'ALTA' : task.priority === 'medium' ? 'MÉDIA' : 'BAIXA'}
+                      </span>
+                      {task.client_name && (
+                        <span className="text-[9px] font-mono text-white/25 truncate max-w-[80px]">{task.client_name}</span>
+                      )}
+                      {task.description && <FileText className="w-2.5 h-2.5 text-white/20" />}
+                      {task.due_date && (
+                        <span className={`text-[9px] font-mono ml-auto ${
+                          new Date(task.due_date).getTime() - Date.now() < 48 * 60 * 60 * 1000 ? 'text-red-400' : 'text-white/20'
+                        }`}>
+                          {new Date(task.due_date).toLocaleDateString('pt-BR')}
+                        </span>
+                      )}
+                    </div>
                   </div>
                 ))}
               </div>
@@ -279,6 +171,13 @@ export function KanbanBoard({ tasks }: { tasks: Task[] }) {
           );
         })}
       </div>
+
+      {selectedTask && (
+        <TaskDetailModal
+          task={selectedTask}
+          onClose={() => { setSelectedTask(null); invalidate(); }}
+        />
+      )}
     </div>
   );
 }
