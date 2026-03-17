@@ -9,6 +9,7 @@ import Index from "./pages/Index";
 import Login from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
 import TeamSpace from "./pages/TeamSpace";
+import CalendarPage from "./pages/CalendarPage";
 import Colleagues from "./pages/Colleagues";
 import AdminPanel from "./pages/AdminPanel";
 import NotFound from "./pages/NotFound";
