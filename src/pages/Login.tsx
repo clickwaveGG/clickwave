@@ -1,26 +1,35 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ArrowLeft, Eye, EyeOff, User } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
+import { supabase } from '@/integrations/supabase/client';
 import clickwaveLogo from '@/assets/clickwave-logo.png';
 
 export default function Login() {
-  const [username, setUsername] = useState('');
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
+  const navigate = useNavigate();
 
-  const handleSignIn = () => {
-    if (!username || !password) {
+  const handleSignIn = async () => {
+    if (!email || !password) {
       setError('Preencha todos os campos.');
       return;
     }
-    if (username.length < 3) {
-      setError('Nome de usuário deve ter ao menos 3 caracteres.');
+    setError('');
+    setLoading(true);
+
+    const { error } = await supabase.auth.signInWithPassword({ email, password });
+
+    if (error) {
+      setError('Email ou senha incorretos.');
+      setLoading(false);
       return;
     }
-    setError('');
-    alert('Login realizado com sucesso! (Demo)');
+
+    navigate('/dashboard');
   };
 
   return (
@@ -70,7 +79,7 @@ export default function Login() {
               Bem-vindo de volta.
             </h1>
             <p className="text-white/40 text-sm">
-              Acesse sua conta com seu nome de usuário e senha.
+              Acesse sua conta com seu e-mail e senha.
             </p>
           </div>
 
@@ -78,14 +87,15 @@ export default function Login() {
           <div className="space-y-4 mb-6">
             <div>
               <label className="block text-[10px] font-mono uppercase tracking-widest text-white/30 mb-2">
-                Nome de usuário
+                E-mail
               </label>
               <input
-                type="text"
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-                placeholder="seu.usuario"
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="seu@email.com"
                 className="w-full bg-white/[0.04] border border-white/10 rounded-xl px-4 py-3.5 text-sm text-white placeholder:text-white/20 focus:outline-none focus:border-brand-orange/40 focus:bg-white/[0.06] transition-all duration-300"
+                onKeyDown={(e) => e.key === 'Enter' && handleSignIn()}
               />
             </div>
             <div>
@@ -99,6 +109,7 @@ export default function Login() {
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="••••••••"
                   className="w-full bg-white/[0.04] border border-white/10 rounded-xl px-4 py-3.5 text-sm text-white placeholder:text-white/20 focus:outline-none focus:border-brand-orange/40 focus:bg-white/[0.06] transition-all duration-300 pr-12"
+                  onKeyDown={(e) => e.key === 'Enter' && handleSignIn()}
                 />
                 <button
                   type="button"
@@ -135,9 +146,10 @@ export default function Login() {
           {/* Submit */}
           <button
             onClick={handleSignIn}
-            className="w-full bg-brand-orange text-white py-3.5 rounded-xl text-sm font-medium hover:bg-orange-600 transition-all duration-300 shadow-[0_0_30px_rgba(255,51,0,0.15)] hover:shadow-[0_0_40px_rgba(255,51,0,0.25)]"
+            disabled={loading}
+            className="w-full bg-brand-orange text-white py-3.5 rounded-xl text-sm font-medium hover:bg-orange-600 transition-all duration-300 shadow-[0_0_30px_rgba(255,51,0,0.15)] hover:shadow-[0_0_40px_rgba(255,51,0,0.25)] disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            Entrar
+            {loading ? 'Entrando...' : 'Entrar'}
           </button>
         </div>
 
