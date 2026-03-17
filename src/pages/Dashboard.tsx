@@ -3,6 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { CheckCircle2, Clock, ListTodo } from 'lucide-react';
 import { KanbanBoard } from '@/components/dashboard/KanbanBoard';
+import { WeeklyTasksSection } from '@/components/dashboard/WeeklyTasksSection';
 import { ObjectivesSection } from '@/components/dashboard/ObjectivesSection';
 import { PendingItemsSection } from '@/components/dashboard/PendingItemsSection';
 
@@ -88,6 +89,7 @@ export default function Dashboard() {
       </div>
 
       <KanbanBoard tasks={tasks} />
+      {profile?.position === 'Gestor de Tráfego' && <WeeklyTasksSection />}
       <ObjectivesSection objectives={objectives} />
       <PendingItemsSection items={pendingItems} />
     </div>
