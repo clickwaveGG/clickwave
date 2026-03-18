@@ -62,9 +62,10 @@ interface GroupedTaskListProps {
   profiles: any[];
   inputClass: string;
   onUpdateDate: (taskId: string, field: 'due_date' | 'capture_date', value: string) => void;
+  onDeleteTask: (taskId: string) => void;
 }
 
-function GroupedTaskList({ tasks, profiles, inputClass, onUpdateDate }: GroupedTaskListProps) {
+function GroupedTaskList({ tasks, profiles, inputClass, onUpdateDate, onDeleteTask }: GroupedTaskListProps) {
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
 
   // Group tasks by service base key
@@ -92,7 +93,7 @@ function GroupedTaskList({ tasks, profiles, inputClass, onUpdateDate }: GroupedT
     const assignee = profiles.find((p: any) => p.user_id === task.assigned_to);
     const isVideoTask = task.title?.toLowerCase().includes('vídeo') || task.title?.toLowerCase().includes('video');
     return (
-      <div key={task.id} className={`rounded-xl border border-white/10 bg-white/[0.02] p-4 ${task.status === 'done' ? 'opacity-50' : ''}`}>
+      <div key={task.id} className={`group/task rounded-xl border border-white/10 bg-white/[0.02] p-4 ${task.status === 'done' ? 'opacity-50' : ''}`}>
         <div className="flex items-start gap-3">
           {task.status === 'done' ? <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" /> : <Clock className="w-4 h-4 text-yellow-400 shrink-0 mt-0.5" />}
           <div className="flex-1 min-w-0">
@@ -105,6 +106,13 @@ function GroupedTaskList({ tasks, profiles, inputClass, onUpdateDate }: GroupedT
               {task.price != null && Number(task.price) > 0 && <span className="text-[10px] font-mono text-emerald-400/60">R$ {Number(task.price).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>}
             </div>
           </div>
+          <button
+            onClick={() => onDeleteTask(task.id)}
+            className="text-white/15 hover:text-red-400 transition-colors opacity-0 group-hover/task:opacity-100 shrink-0 mt-0.5"
+            title="Remover tarefa"
+          >
+            <Trash2 className="w-3.5 h-3.5" />
+          </button>
         </div>
         <div className={`grid gap-2 mt-3 ml-7 ${isVideoTask ? 'grid-cols-2' : 'grid-cols-1 max-w-[200px]'}`}>
           <div>
@@ -677,6 +685,11 @@ export default function ClientsPage() {
                   profiles={profiles}
                   inputClass={inputClass}
                   onUpdateDate={(taskId, field, value) => updateTaskDateMutation.mutate({ taskId, field, value })}
+                  onDeleteTask={async (taskId) => {
+                    await supabase.from('tasks').delete().eq('id', taskId);
+                    invalidateAll();
+                    toast.success('Tarefa removida!');
+                  }}
                 />
               )}
             </div>
