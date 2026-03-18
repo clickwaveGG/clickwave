@@ -13,6 +13,7 @@ type Task = {
   priority: string;
   client_name: string | null;
   description: string | null;
+  weekday: number | null;
 };
 
 type Profile = {
