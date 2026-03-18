@@ -45,7 +45,9 @@ export type Database = {
           created_at: string
           due_date: string | null
           id: string
+          member_payment: number | null
           price: number | null
+          profit: number | null
           quantity_per_month: number | null
           responsible_id: string | null
           service_name: string
@@ -56,7 +58,9 @@ export type Database = {
           created_at?: string
           due_date?: string | null
           id?: string
+          member_payment?: number | null
           price?: number | null
+          profit?: number | null
           quantity_per_month?: number | null
           responsible_id?: string | null
           service_name: string
@@ -67,7 +71,9 @@ export type Database = {
           created_at?: string
           due_date?: string | null
           id?: string
+          member_payment?: number | null
           price?: number | null
+          profit?: number | null
           quantity_per_month?: number | null
           responsible_id?: string | null
           service_name?: string
