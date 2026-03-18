@@ -70,24 +70,36 @@ export function KanbanBoard({ tasks }: { tasks: Task[] }) {
     invalidate();
   };
 
+  // Tasks missing both capture_date and due_date → compacted into "Pendente"
+  const pendingVideoTasks = tasks.filter(t => !t.capture_date && !t.due_date && t.status === 'todo');
+  const regularTasks = tasks.filter(t => !(pendingVideoTasks.includes(t)));
+
   return (
     <div>
       <h2 className="text-lg font-serif text-white mb-4">Minhas Tarefas</h2>
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
         {STATUS_COLUMNS.map(col => {
-          const colTasks = tasks.filter(t => t.status === col.key);
+          const isPendingCol = col.key === 'pending';
+          const colTasks = isPendingCol ? [] : regularTasks.filter(t => t.status === col.key);
+          const visibleTasks = colTasks.slice(0, MAX_VISIBLE_TASKS);
+          const hiddenCount = colTasks.length - visibleTasks.length;
+
           return (
             <div key={col.key} className="rounded-2xl border border-white/10 bg-white/[0.02] p-4 min-h-[200px]">
               <div className="flex items-center gap-2 mb-4">
                 <div className={`w-2 h-2 rounded-full ${col.dot}`} />
                 <span className={`text-xs font-mono uppercase tracking-wider ${col.color}`}>{col.label}</span>
-                <span className="text-white/20 text-xs ml-auto">{colTasks.length}</span>
-                <button
-                  onClick={() => { setAddingTo(col.key); setNewTitle(''); setNewPriority('medium'); }}
-                  className="text-white/20 hover:text-brand-orange transition-colors"
-                >
-                  <Plus className="w-3.5 h-3.5" />
-                </button>
+                <span className="text-white/20 text-xs ml-auto">
+                  {isPendingCol ? pendingVideoTasks.length : colTasks.length}
+                </span>
+                {!isPendingCol && (
+                  <button
+                    onClick={() => { setAddingTo(col.key); setNewTitle(''); setNewPriority('medium'); }}
+                    className="text-white/20 hover:text-brand-orange transition-colors"
+                  >
+                    <Plus className="w-3.5 h-3.5" />
+                  </button>
+                )}
               </div>
 
               {addingTo === col.key && (
@@ -129,46 +141,88 @@ export function KanbanBoard({ tasks }: { tasks: Task[] }) {
               )}
 
               <div className="space-y-2">
-                {colTasks.length === 0 && addingTo !== col.key && (
-                  <p className="text-white/15 text-xs font-mono text-center py-8">Nenhuma tarefa</p>
-                )}
-                {colTasks.map(task => (
-                  <div
-                    key={task.id}
-                    onClick={() => setSelectedTask(task)}
-                    className={`group rounded-xl border border-white/10 bg-white/[0.03] p-3 cursor-pointer hover:border-white/20 hover:bg-white/[0.05] transition-all ${task.status === 'done' ? 'opacity-50' : ''}`}
-                  >
-                    <div className="flex items-start justify-between gap-2">
-                      <p className={`text-sm text-white ${task.status === 'done' ? 'line-through' : ''}`}>{task.title}</p>
-                      <button
-                        onClick={(e) => deleteTask(e, task.id)}
-                        className="text-white/20 hover:text-red-400 transition-colors opacity-0 group-hover:opacity-100 shrink-0"
+                {isPendingCol ? (
+                  pendingVideoTasks.length === 0 ? (
+                    <p className="text-white/15 text-xs font-mono text-center py-8">Nenhuma pendência</p>
+                  ) : (
+                    <div className="rounded-xl border border-orange-500/20 bg-orange-500/[0.05] p-3">
+                      <div className="flex items-center gap-2">
+                        <Video className="w-4 h-4 text-orange-400" />
+                        <p className="text-sm text-white">
+                          <span className="font-semibold text-orange-400">{pendingVideoTasks.length}</span>{' '}
+                          {pendingVideoTasks.length === 1 ? 'vídeo sem data' : 'vídeos sem data'}
+                        </p>
+                      </div>
+                      <p className="text-[10px] font-mono text-white/30 mt-1.5">
+                        Captação e entrega não programadas
+                      </p>
+                      <div className="mt-2 space-y-1">
+                        {pendingVideoTasks.slice(0, 3).map(t => (
+                          <div
+                            key={t.id}
+                            onClick={() => setSelectedTask(t)}
+                            className="text-[11px] text-white/40 truncate cursor-pointer hover:text-white/60 transition-colors"
+                          >
+                            • {t.title}
+                          </div>
+                        ))}
+                        {pendingVideoTasks.length > 3 && (
+                          <p className="text-[10px] text-white/20 font-mono">
+                            +{pendingVideoTasks.length - 3} mais
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  )
+                ) : (
+                  <>
+                    {visibleTasks.length === 0 && addingTo !== col.key && (
+                      <p className="text-white/15 text-xs font-mono text-center py-8">Nenhuma tarefa</p>
+                    )}
+                    {visibleTasks.map(task => (
+                      <div
+                        key={task.id}
+                        onClick={() => setSelectedTask(task)}
+                        className={`group rounded-xl border border-white/10 bg-white/[0.03] p-3 cursor-pointer hover:border-white/20 hover:bg-white/[0.05] transition-all ${task.status === 'done' ? 'opacity-50' : ''}`}
                       >
-                        <Trash2 className="w-3 h-3" />
-                      </button>
-                    </div>
-                    <div className="flex items-center gap-2 mt-2">
-                      <span className={`text-[9px] font-mono px-1.5 py-0.5 rounded border ${
-                        task.priority === 'high' ? 'border-red-500/30 text-red-400 bg-red-500/10'
-                          : task.priority === 'medium' ? 'border-orange-500/30 text-orange-400 bg-orange-500/10'
-                          : 'border-white/10 text-white/30'
-                      }`}>
-                        {task.priority === 'high' ? 'ALTA' : task.priority === 'medium' ? 'MÉDIA' : 'BAIXA'}
-                      </span>
-                      {task.client_name && (
-                        <span className="text-[9px] font-mono text-white/25 truncate max-w-[80px]">{task.client_name}</span>
-                      )}
-                      {task.description && <FileText className="w-2.5 h-2.5 text-white/20" />}
-                      {task.due_date && (
-                        <span className={`text-[9px] font-mono ml-auto ${
-                          new Date(task.due_date).getTime() - Date.now() < 48 * 60 * 60 * 1000 ? 'text-red-400' : 'text-white/20'
-                        }`}>
-                          {new Date(task.due_date).toLocaleDateString('pt-BR')}
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                ))}
+                        <div className="flex items-start justify-between gap-2">
+                          <p className={`text-sm text-white ${task.status === 'done' ? 'line-through' : ''}`}>{task.title}</p>
+                          <button
+                            onClick={(e) => deleteTask(e, task.id)}
+                            className="text-white/20 hover:text-red-400 transition-colors opacity-0 group-hover:opacity-100 shrink-0"
+                          >
+                            <Trash2 className="w-3 h-3" />
+                          </button>
+                        </div>
+                        <div className="flex items-center gap-2 mt-2">
+                          <span className={`text-[9px] font-mono px-1.5 py-0.5 rounded border ${
+                            task.priority === 'high' ? 'border-red-500/30 text-red-400 bg-red-500/10'
+                              : task.priority === 'medium' ? 'border-orange-500/30 text-orange-400 bg-orange-500/10'
+                              : 'border-white/10 text-white/30'
+                          }`}>
+                            {task.priority === 'high' ? 'ALTA' : task.priority === 'medium' ? 'MÉDIA' : 'BAIXA'}
+                          </span>
+                          {task.client_name && (
+                            <span className="text-[9px] font-mono text-white/25 truncate max-w-[80px]">{task.client_name}</span>
+                          )}
+                          {task.description && <FileText className="w-2.5 h-2.5 text-white/20" />}
+                          {task.due_date && (
+                            <span className={`text-[9px] font-mono ml-auto ${
+                              new Date(task.due_date).getTime() - Date.now() < 48 * 60 * 60 * 1000 ? 'text-red-400' : 'text-white/20'
+                            }`}>
+                              {new Date(task.due_date).toLocaleDateString('pt-BR')}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                    {hiddenCount > 0 && (
+                      <p className="text-[10px] font-mono text-white/20 text-center pt-1">
+                        +{hiddenCount} {hiddenCount === 1 ? 'tarefa' : 'tarefas'}
+                      </p>
+                    )}
+                  </>
+                )}
               </div>
             </div>
           );
