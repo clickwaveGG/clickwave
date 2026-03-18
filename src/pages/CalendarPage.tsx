@@ -18,9 +18,22 @@ type Task = {
   created_at: string;
 };
 
+// A calendar entry: either a regular task or one occurrence of a recurring task
+type CalendarEntry = {
+  task: Task;
+  dateKey: string;
+  isRecurring: boolean;
+  isDone: boolean;
+};
+
 type Profile = {
   user_id: string;
   full_name: string;
+};
+
+type Completion = {
+  task_id: string;
+  completion_date: string;
 };
 
 function getDaysInMonth(year: number, month: number) {
@@ -29,7 +42,7 @@ function getDaysInMonth(year: number, month: number) {
 
 function getFirstDayOfMonth(year: number, month: number) {
   const d = new Date(year, month, 1).getDay();
-  return d === 0 ? 6 : d - 1; // Monday-first
+  return d === 0 ? 6 : d - 1;
 }
 
 const MONTH_NAMES = [
@@ -55,34 +68,68 @@ export default function CalendarPage() {
   const [selectedMiniDay, setSelectedMiniDay] = useState<number | null>(null);
   const [selectedMainDay, setSelectedMainDay] = useState<number | null>(null);
 
-  const toggleTaskStatus = async (taskId: string, currentStatus: string) => {
-    const newStatus = currentStatus === 'done' ? 'todo' : 'done';
-    const { error } = await supabase.from('tasks').update({ status: newStatus }).eq('id', taskId);
-    if (error) {
-      toast.error('Erro ao atualizar status');
+  const invalidate = () => {
+    qc.invalidateQueries({ queryKey: ['calendar-tasks'] });
+    qc.invalidateQueries({ queryKey: ['recurring-completions'] });
+    qc.invalidateQueries({ queryKey: ['my-tasks'] });
+  };
+
+  const toggleEntryStatus = async (entry: CalendarEntry) => {
+    if (entry.isRecurring) {
+      if (entry.isDone) {
+        // Remove completion
+        await supabase
+          .from('recurring_task_completions')
+          .delete()
+          .eq('task_id', entry.task.id)
+          .eq('completion_date', entry.dateKey);
+        toast.success('Reaberta');
+      } else {
+        // Add completion
+        const { error } = await supabase.from('recurring_task_completions').insert({
+          task_id: entry.task.id,
+          completion_date: entry.dateKey,
+          completed_by: user!.id,
+        });
+        if (error) { toast.error('Erro ao atualizar'); return; }
+        toast.success('Marcada como concluída');
+      }
     } else {
+      const newStatus = entry.isDone ? 'todo' : 'done';
+      const { error } = await supabase.from('tasks').update({ status: newStatus }).eq('id', entry.task.id);
+      if (error) { toast.error('Erro ao atualizar'); return; }
       toast.success(newStatus === 'done' ? 'Marcada como concluída' : 'Reaberta');
-      qc.invalidateQueries({ queryKey: ['calendar-tasks'] });
-      qc.invalidateQueries({ queryKey: ['my-tasks'] });
     }
+    invalidate();
   };
 
   const { data: allTasks = [] } = useQuery({
     queryKey: ['calendar-tasks', user?.id, isAdmin],
     queryFn: async () => {
-      // Fetch tasks with due_date OR weekday set
       let query = supabase
         .from('tasks')
         .select('*')
         .order('due_date', { ascending: true });
-
       if (!isAdmin) {
         query = query.eq('assigned_to', user!.id);
       }
-
       const { data } = await query;
-      // Filter: must have due_date or weekday
       return ((data || []) as Task[]).filter(t => t.due_date || t.weekday != null);
+    },
+    enabled: !!user,
+  });
+
+  const { data: completions = [] } = useQuery({
+    queryKey: ['recurring-completions', year, month],
+    queryFn: async () => {
+      const startDate = `${year}-${String(month + 1).padStart(2, '0')}-01`;
+      const endDate = `${year}-${String(month + 1).padStart(2, '0')}-${getDaysInMonth(year, month)}`;
+      const { data } = await supabase
+        .from('recurring_task_completions')
+        .select('task_id, completion_date')
+        .gte('completion_date', startDate)
+        .lte('completion_date', endDate);
+      return (data || []) as Completion[];
     },
     enabled: !!user,
   });
@@ -102,61 +149,80 @@ export default function CalendarPage() {
     return map;
   }, [profiles]);
 
+  const completionSet = useMemo(() => {
+    const set = new Set<string>();
+    completions.forEach(c => set.add(`${c.task_id}:${c.completion_date}`));
+    return set;
+  }, [completions]);
+
   const daysInMonth = getDaysInMonth(year, month);
   const firstDay = getFirstDayOfMonth(year, month);
   const todayStr = now.toISOString().slice(0, 10);
 
-  // Convert JS weekday (0=Sun) to our weekday (0=Mon)
   const jsWeekdayToOurs = (jsDay: number) => jsDay === 0 ? 6 : jsDay - 1;
 
-  const tasksByDate = useMemo(() => {
-    const map: Record<string, Task[]> = {};
+  // Build calendar entries per date
+  const entriesByDate = useMemo(() => {
+    const map: Record<string, CalendarEntry[]> = {};
+
+    const addEntry = (dateKey: string, entry: CalendarEntry) => {
+      if (!map[dateKey]) map[dateKey] = [];
+      map[dateKey].push(entry);
+    };
+
     allTasks.forEach(t => {
-      // Tasks with a specific due_date
-      if (t.due_date) {
+      // Regular tasks with due_date
+      if (t.due_date && t.weekday == null) {
         const dateKey = t.due_date.slice(0, 10);
-        if (!map[dateKey]) map[dateKey] = [];
-        map[dateKey].push(t);
+        addEntry(dateKey, {
+          task: t,
+          dateKey,
+          isRecurring: false,
+          isDone: t.status === 'done',
+        });
       }
-      // Tasks with weekday (recurring traffic) — inject into every matching weekday of the current month
-      // Show in all months from task creation date onwards, regardless of status
+
+      // Recurring weekday tasks — limit to 4 per month
       if (t.weekday != null) {
         const createdDate = new Date(t.created_at || '2000-01-01');
         const monthStart = new Date(year, month, 1);
-        // Only show from the month the task was created onwards
         if (monthStart >= new Date(createdDate.getFullYear(), createdDate.getMonth(), 1)) {
-          for (let d = 1; d <= daysInMonth; d++) {
+          let count = 0;
+          for (let d = 1; d <= daysInMonth && count < 4; d++) {
             const date = new Date(year, month, d);
             if (jsWeekdayToOurs(date.getDay()) === t.weekday) {
               const dateKey = `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
-              if (!map[dateKey]) map[dateKey] = [];
-              if (!map[dateKey].some(existing => existing.id === t.id)) {
-                map[dateKey].push(t);
-              }
+              const isDone = completionSet.has(`${t.id}:${dateKey}`);
+              addEntry(dateKey, {
+                task: t,
+                dateKey,
+                isRecurring: true,
+                isDone,
+              });
+              count++;
             }
           }
         }
       }
     });
     return map;
-  }, [allTasks, year, month, daysInMonth]);
+  }, [allTasks, year, month, daysInMonth, completionSet]);
 
-  // Day status for mini calendar: true = all done, false = has overdue, undefined = no tasks
+  // Day status for mini calendar
   const dayStatus = useMemo(() => {
     const map: Record<number, boolean> = {};
     for (let d = 1; d <= daysInMonth; d++) {
       const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
       const dayDate = new Date(year, month, d);
-      const tasks = tasksByDate[dateStr];
-      if (!tasks || tasks.length === 0) continue;
-      // Only evaluate past & today
+      const entries = entriesByDate[dateStr];
+      if (!entries || entries.length === 0) continue;
       if (dayDate <= now) {
-        const allDone = tasks.every(t => t.status === 'done');
+        const allDone = entries.every(e => e.isDone);
         map[d] = allDone;
       }
     }
     return map;
-  }, [tasksByDate, year, month, daysInMonth, now]);
+  }, [entriesByDate, year, month, daysInMonth, now]);
 
   const prevMonth = () => {
     if (month === 0) { setMonth(11); setYear(y => y - 1); }
@@ -171,7 +237,6 @@ export default function CalendarPage() {
   const renderMainCalendar = () => {
     const cells: React.ReactNode[] = [];
 
-    // Empty cells before first day
     for (let i = 0; i < firstDay; i++) {
       cells.push(<div key={`empty-${i}`} className="min-h-[120px] border border-white/5 bg-white/[0.01]" />);
     }
@@ -179,7 +244,7 @@ export default function CalendarPage() {
     for (let d = 1; d <= daysInMonth; d++) {
       const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
       const isToday = dateStr === todayStr;
-      const tasks = tasksByDate[dateStr] || [];
+      const entries = entriesByDate[dateStr] || [];
 
       cells.push(
         <button
@@ -193,39 +258,37 @@ export default function CalendarPage() {
             <span className={`text-xs font-mono ${isToday ? 'text-brand-orange font-bold' : 'text-white/40'}`}>
               {d}
             </span>
-            {tasks.length > 0 && (
-              <span className="text-[9px] font-mono text-white/20">{tasks.length}</span>
+            {entries.length > 0 && (
+              <span className="text-[9px] font-mono text-white/20">{entries.length}</span>
             )}
           </div>
           <div className="space-y-1 overflow-hidden max-h-[80px]">
-            {tasks.slice(0, 3).map(task => {
-              const assignee = task.assigned_to ? profileMap[task.assigned_to] : null;
+            {entries.slice(0, 3).map((entry, idx) => {
+              const assignee = entry.task.assigned_to ? profileMap[entry.task.assigned_to] : null;
               const firstName = assignee?.split(' ')[0] || '?';
-              const priorityClass = PRIORITY_COLORS[task.priority] || PRIORITY_COLORS.medium;
-              const isDone = task.status === 'done';
+              const priorityClass = PRIORITY_COLORS[entry.task.priority] || PRIORITY_COLORS.medium;
 
               return (
                 <div
-                  key={task.id}
+                  key={`${entry.task.id}-${idx}`}
                   className={`flex items-center gap-1.5 px-1.5 py-1 rounded-md border text-[10px] leading-tight ${
-                    isDone ? 'opacity-40 line-through border-white/5 bg-white/[0.02] text-white/30' : priorityClass
+                    entry.isDone ? 'opacity-40 line-through border-emerald-500/20 bg-emerald-500/[0.05] text-emerald-300/60' : priorityClass
                   }`}
                 >
-                  {isDone && <CheckCircle2 className="w-2.5 h-2.5 text-emerald-400 shrink-0" />}
-                  <span className="truncate flex-1">{task.title}</span>
+                  {entry.isDone && <CheckCircle2 className="w-2.5 h-2.5 text-emerald-400 shrink-0" />}
+                  <span className="truncate flex-1">{entry.task.title}</span>
                   <span className="text-white/30 shrink-0">{firstName}</span>
                 </div>
               );
             })}
-            {tasks.length > 3 && (
-              <p className="text-[9px] text-white/20 font-mono pl-1">+{tasks.length - 3} mais</p>
+            {entries.length > 3 && (
+              <p className="text-[9px] text-white/20 font-mono pl-1">+{entries.length - 3} mais</p>
             )}
           </div>
         </button>
       );
     }
 
-    // Fill remaining cells to complete grid
     const totalCells = firstDay + daysInMonth;
     const remainder = totalCells % 7;
     if (remainder > 0) {
@@ -246,7 +309,7 @@ export default function CalendarPage() {
 
     for (let d = 1; d <= daysInMonth; d++) {
       const isToday = d === now.getDate() && month === now.getMonth() && year === now.getFullYear();
-      const status = dayStatus[d]; // true=green, false=red, undefined=neutral
+      const status = dayStatus[d];
 
       let dotClass = '';
       if (status === true) dotClass = 'bg-emerald-500';
@@ -276,17 +339,85 @@ export default function CalendarPage() {
   };
 
   // Stats
-  const monthTasks = useMemo(() => {
-    const prefix = `${year}-${String(month + 1).padStart(2, '0')}`;
-    return allTasks.filter(t => t.due_date?.startsWith(prefix));
-  }, [allTasks, year, month]);
+  const monthEntries = useMemo(() => {
+    const all: CalendarEntry[] = [];
+    Object.values(entriesByDate).forEach(entries => all.push(...entries));
+    return all;
+  }, [entriesByDate]);
 
-  const completedCount = monthTasks.filter(t => t.status === 'done').length;
-  const overdueCount = monthTasks.filter(t => {
-    if (t.status === 'done') return false;
-    if (!t.due_date) return false;
-    return new Date(t.due_date) < now;
+  const completedCount = monthEntries.filter(e => e.isDone).length;
+  const overdueCount = monthEntries.filter(e => {
+    if (e.isDone) return false;
+    const entryDate = new Date(e.dateKey);
+    return entryDate < now;
   }).length;
+
+  const renderEntryCard = (entry: CalendarEntry, showToggle: boolean) => {
+    const assignee = entry.task.assigned_to ? profileMap[entry.task.assigned_to] : null;
+    const priorityLabel = entry.task.priority === 'high' ? 'Alta' : entry.task.priority === 'low' ? 'Baixa' : 'Média';
+
+    return (
+      <div
+        key={`${entry.task.id}-${entry.dateKey}`}
+        className={`px-4 py-3 rounded-xl border transition-colors ${
+          entry.isDone
+            ? 'border-emerald-500/15 bg-emerald-500/5'
+            : 'border-white/10 bg-white/[0.03]'
+        }`}
+      >
+        <div className="flex items-start justify-between gap-3">
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2">
+              {entry.isDone
+                ? <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+                : <XCircle className="w-4 h-4 text-white/20 shrink-0" />
+              }
+              <span className={`text-sm font-medium ${entry.isDone ? 'text-emerald-300/80 line-through' : 'text-white/80'}`}>
+                {entry.task.title}
+              </span>
+              {entry.isRecurring && (
+                <span className="text-[9px] font-mono px-1.5 py-0.5 rounded border border-blue-500/20 text-blue-400/60 bg-blue-500/5">
+                  RECORRENTE
+                </span>
+              )}
+            </div>
+            {entry.task.description && (
+              <p className="text-xs text-white/30 mt-1 ml-6 line-clamp-2">{entry.task.description}</p>
+            )}
+          </div>
+          <div className="flex flex-col items-end gap-1 shrink-0">
+            <span className={`text-[10px] font-mono px-2 py-0.5 rounded-md border ${PRIORITY_COLORS[entry.task.priority] || PRIORITY_COLORS.medium}`}>
+              {priorityLabel}
+            </span>
+            {entry.task.client_name && (
+              <span className="text-[10px] font-mono text-white/25">{entry.task.client_name}</span>
+            )}
+          </div>
+        </div>
+        <div className="flex items-center gap-2 mt-2 ml-6">
+          <span className="text-[10px] font-mono text-white/30">
+            Responsável: <span className="text-white/50">{assignee || 'Não atribuído'}</span>
+          </span>
+          <span className={`text-[10px] font-mono ${entry.isDone ? 'text-emerald-400/60' : 'text-yellow-400/60'}`}>
+            • {entry.isDone ? 'Concluída' : 'Pendente'}
+          </span>
+          {showToggle && isAdmin && (
+            <button
+              onClick={() => toggleEntryStatus(entry)}
+              className={`ml-auto flex items-center gap-1 text-[10px] font-mono px-2 py-1 rounded-lg border transition-all ${
+                entry.isDone
+                  ? 'border-yellow-500/30 text-yellow-400 hover:bg-yellow-500/10'
+                  : 'border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/10'
+              }`}
+            >
+              {entry.isDone ? <RotateCcw className="w-3 h-3" /> : <CheckCircle2 className="w-3 h-3" />}
+              {entry.isDone ? 'Reabrir' : 'Concluir'}
+            </button>
+          )}
+        </div>
+      </div>
+    );
+  };
 
   return (
     <div className="space-y-6 max-w-[1400px]">
@@ -307,7 +438,6 @@ export default function CalendarPage() {
         {/* Main Calendar */}
         <div className="flex-1">
           <div className="rounded-2xl border border-white/10 bg-white/[0.02] overflow-hidden">
-            {/* Month navigation */}
             <div className="flex items-center justify-between px-5 py-4 border-b border-white/5">
               <button onClick={prevMonth} className="text-white/30 hover:text-white/60 transition-colors p-1.5 rounded-lg hover:bg-white/5">
                 <ChevronLeft className="w-5 h-5" />
@@ -320,7 +450,6 @@ export default function CalendarPage() {
               </button>
             </div>
 
-            {/* Day headers */}
             <div className="grid grid-cols-7 border-b border-white/5">
               {DAY_HEADERS.map(d => (
                 <div key={d} className="text-center text-[10px] font-mono uppercase text-white/25 py-2.5 tracking-wider">
@@ -329,7 +458,6 @@ export default function CalendarPage() {
               ))}
             </div>
 
-            {/* Calendar grid */}
             <div className="grid grid-cols-7">
               {renderMainCalendar()}
             </div>
@@ -338,7 +466,7 @@ export default function CalendarPage() {
           {/* Selected day detail */}
           {selectedMainDay !== null && (() => {
             const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(selectedMainDay).padStart(2, '0')}`;
-            const dayTasks = tasksByDate[dateStr] || [];
+            const dayEntries = entriesByDate[dateStr] || [];
 
             return (
               <div className="rounded-2xl border border-white/10 bg-white/[0.02] p-5 space-y-3 mt-4">
@@ -349,72 +477,11 @@ export default function CalendarPage() {
                   <button onClick={() => setSelectedMainDay(null)} className="text-white/20 hover:text-white/50 text-sm px-2">✕</button>
                 </div>
 
-                {dayTasks.length === 0 ? (
+                {dayEntries.length === 0 ? (
                   <p className="text-xs text-white/20 font-mono">Nenhuma tarefa agendada para este dia.</p>
                 ) : (
                   <div className="space-y-2">
-                    {dayTasks.map(task => {
-                      const assignee = task.assigned_to ? profileMap[task.assigned_to] : null;
-                      const isDone = task.status === 'done';
-                      const priorityLabel = task.priority === 'high' ? 'Alta' : task.priority === 'low' ? 'Baixa' : 'Média';
-
-                      return (
-                        <div
-                          key={task.id}
-                          className={`px-4 py-3 rounded-xl border transition-colors ${
-                            isDone
-                              ? 'border-emerald-500/15 bg-emerald-500/5'
-                              : 'border-white/10 bg-white/[0.03]'
-                          }`}
-                        >
-                          <div className="flex items-start justify-between gap-3">
-                            <div className="flex-1 min-w-0">
-                              <div className="flex items-center gap-2">
-                                {isDone
-                                  ? <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
-                                  : <XCircle className="w-4 h-4 text-white/20 shrink-0" />
-                                }
-                                <span className={`text-sm font-medium ${isDone ? 'text-emerald-300/80 line-through' : 'text-white/80'}`}>
-                                  {task.title}
-                                </span>
-                              </div>
-                              {task.description && (
-                                <p className="text-xs text-white/30 mt-1 ml-6 line-clamp-2">{task.description}</p>
-                              )}
-                            </div>
-                            <div className="flex flex-col items-end gap-1 shrink-0">
-                              <span className={`text-[10px] font-mono px-2 py-0.5 rounded-md border ${PRIORITY_COLORS[task.priority] || PRIORITY_COLORS.medium}`}>
-                                {priorityLabel}
-                              </span>
-                              {task.client_name && (
-                                <span className="text-[10px] font-mono text-white/25">{task.client_name}</span>
-                              )}
-                            </div>
-                          </div>
-                          <div className="flex items-center gap-2 mt-2 ml-6">
-                            <span className="text-[10px] font-mono text-white/30">
-                              Responsável: <span className="text-white/50">{assignee || 'Não atribuído'}</span>
-                            </span>
-                            <span className={`text-[10px] font-mono ${isDone ? 'text-emerald-400/60' : 'text-yellow-400/60'}`}>
-                              • {isDone ? 'Concluída' : task.status === 'in_progress' ? 'Em andamento' : 'Pendente'}
-                            </span>
-                            {isAdmin && (
-                              <button
-                                onClick={() => toggleTaskStatus(task.id, task.status)}
-                                className={`ml-auto flex items-center gap-1 text-[10px] font-mono px-2 py-1 rounded-lg border transition-all ${
-                                  isDone
-                                    ? 'border-yellow-500/30 text-yellow-400 hover:bg-yellow-500/10'
-                                    : 'border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/10'
-                                }`}
-                              >
-                                {isDone ? <RotateCcw className="w-3 h-3" /> : <CheckCircle2 className="w-3 h-3" />}
-                                {isDone ? 'Reabrir' : 'Concluir'}
-                              </button>
-                            )}
-                          </div>
-                        </div>
-                      );
-                    })}
+                    {dayEntries.map(entry => renderEntryCard(entry, true))}
                   </div>
                 )}
               </div>
@@ -422,7 +489,7 @@ export default function CalendarPage() {
           })()}
         </div>
 
-        {/* Sidebar: Mini Calendar + Stats */}
+        {/* Sidebar */}
         <div className="w-full xl:w-72 space-y-5">
           {/* Mini Calendar */}
           <div className="rounded-2xl border border-white/10 bg-white/[0.02] p-5">
@@ -449,9 +516,9 @@ export default function CalendarPage() {
           {/* Day detail panel */}
           {selectedMiniDay !== null && (() => {
             const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(selectedMiniDay).padStart(2, '0')}`;
-            const dayTasks = tasksByDate[dateStr] || [];
-            const completed = dayTasks.filter(t => t.status === 'done');
-            const overdue = dayTasks.filter(t => t.status !== 'done');
+            const dayEntries = entriesByDate[dateStr] || [];
+            const completed = dayEntries.filter(e => e.isDone);
+            const pending = dayEntries.filter(e => !e.isDone);
 
             return (
               <div className="rounded-2xl border border-white/10 bg-white/[0.02] p-5 space-y-3">
@@ -467,15 +534,15 @@ export default function CalendarPage() {
                     <p className="text-[10px] font-mono uppercase text-emerald-400/70 tracking-wider flex items-center gap-1.5">
                       <CheckCircle2 className="w-3 h-3" /> Concluídas
                     </p>
-                    {completed.map(t => (
-                      <div key={t.id} className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg bg-emerald-500/5 border border-emerald-500/10">
-                        <span className="text-xs text-emerald-300/80 truncate flex-1">{t.title}</span>
+                    {completed.map(entry => (
+                      <div key={`${entry.task.id}-${entry.dateKey}`} className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg bg-emerald-500/5 border border-emerald-500/10">
+                        <span className="text-xs text-emerald-300/80 truncate flex-1">{entry.task.title}</span>
                         <span className="text-[9px] text-white/25 font-mono shrink-0">
-                          {t.assigned_to ? profileMap[t.assigned_to]?.split(' ')[0] : '?'}
+                          {entry.task.assigned_to ? profileMap[entry.task.assigned_to]?.split(' ')[0] : '?'}
                         </span>
                         {isAdmin && (
                           <button
-                            onClick={() => toggleTaskStatus(t.id, t.status)}
+                            onClick={() => toggleEntryStatus(entry)}
                             className="text-yellow-400 hover:text-yellow-300 transition-colors shrink-0"
                             title="Reabrir tarefa"
                           >
@@ -487,20 +554,20 @@ export default function CalendarPage() {
                   </div>
                 )}
 
-                {overdue.length > 0 && (
+                {pending.length > 0 && (
                   <div className="space-y-1.5">
                     <p className="text-[10px] font-mono uppercase text-red-400/70 tracking-wider flex items-center gap-1.5">
-                      <XCircle className="w-3 h-3" /> Atrasadas
+                      <XCircle className="w-3 h-3" /> Pendentes
                     </p>
-                    {overdue.map(t => (
-                      <div key={t.id} className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg bg-red-500/5 border border-red-500/10">
-                        <span className="text-xs text-red-300/80 truncate flex-1">{t.title}</span>
+                    {pending.map(entry => (
+                      <div key={`${entry.task.id}-${entry.dateKey}`} className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg bg-red-500/5 border border-red-500/10">
+                        <span className="text-xs text-red-300/80 truncate flex-1">{entry.task.title}</span>
                         <span className="text-[9px] text-white/25 font-mono shrink-0">
-                          {t.assigned_to ? profileMap[t.assigned_to]?.split(' ')[0] : '?'}
+                          {entry.task.assigned_to ? profileMap[entry.task.assigned_to]?.split(' ')[0] : '?'}
                         </span>
                         {isAdmin && (
                           <button
-                            onClick={() => toggleTaskStatus(t.id, t.status)}
+                            onClick={() => toggleEntryStatus(entry)}
                             className="text-emerald-400 hover:text-emerald-300 transition-colors shrink-0"
                             title="Marcar como concluída"
                           >
@@ -512,7 +579,7 @@ export default function CalendarPage() {
                   </div>
                 )}
 
-                {dayTasks.length === 0 && (
+                {dayEntries.length === 0 && (
                   <p className="text-xs text-white/20 font-mono">Nenhuma tarefa neste dia.</p>
                 )}
               </div>
@@ -526,7 +593,7 @@ export default function CalendarPage() {
             <div className="space-y-3">
               <div className="flex items-center justify-between">
                 <span className="text-xs text-white/40 font-mono">Total de entregas</span>
-                <span className="text-sm font-serif text-white">{monthTasks.length}</span>
+                <span className="text-sm font-serif text-white">{monthEntries.length}</span>
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-xs text-white/40 font-mono flex items-center gap-1.5">
@@ -541,18 +608,17 @@ export default function CalendarPage() {
                 <span className="text-sm font-serif text-red-400">{overdueCount}</span>
               </div>
 
-              {/* Progress bar */}
               <div>
                 <div className="flex items-center justify-between mb-1">
                   <span className="text-[10px] font-mono text-white/25">Progresso</span>
                   <span className="text-[10px] font-mono text-white/25">
-                    {monthTasks.length > 0 ? Math.round((completedCount / monthTasks.length) * 100) : 0}%
+                    {monthEntries.length > 0 ? Math.round((completedCount / monthEntries.length) * 100) : 0}%
                   </span>
                 </div>
                 <div className="h-1.5 rounded-full bg-white/5 overflow-hidden">
                   <div
                     className="h-full rounded-full bg-gradient-to-r from-brand-orange to-emerald-500 transition-all duration-500"
-                    style={{ width: `${monthTasks.length > 0 ? (completedCount / monthTasks.length) * 100 : 0}%` }}
+                    style={{ width: `${monthEntries.length > 0 ? (completedCount / monthEntries.length) * 100 : 0}%` }}
                   />
                 </div>
               </div>
