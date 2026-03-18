@@ -143,17 +143,26 @@ export default function ClientsPage() {
         if (sErr) throw sErr;
       }
 
-      // Automatically create tasks from services
+      // Automatically create tasks from services (N tasks if quantity_per_month is set)
       if (validServices.length > 0) {
-        const taskInserts = validServices.map(s => ({
-          title: `${s.service_name} — ${newClient.name.trim()}`,
-          client_name: newClient.name.trim(),
-          assigned_to: s.responsible_id || user!.id,
-          created_by: user!.id,
-          price: s.price ? parseFloat(s.price) : null,
-          status: 'todo' as const,
-          priority: 'medium' as const,
-        }));
+        const taskInserts: any[] = [];
+        validServices.forEach(s => {
+          const qty = s.quantity_per_month ? parseInt(s.quantity_per_month) : 1;
+          const count = qty > 0 ? qty : 1;
+          for (let i = 0; i < count; i++) {
+            taskInserts.push({
+              title: count > 1
+                ? `${s.service_name} ${i + 1}/${count} — ${newClient.name.trim()}`
+                : `${s.service_name} — ${newClient.name.trim()}`,
+              client_name: newClient.name.trim(),
+              assigned_to: s.responsible_id || user!.id,
+              created_by: user!.id,
+              price: s.price ? parseFloat(s.price) / count : null,
+              status: 'todo' as const,
+              priority: 'medium' as const,
+            });
+          }
+        });
         await supabase.from('tasks').insert(taskInserts);
       }
     },
