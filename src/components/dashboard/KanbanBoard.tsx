@@ -1,9 +1,9 @@
-import { useState } from 'react';
+import { useState, DragEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { useQueryClient } from '@tanstack/react-query';
-import { Plus, Trash2, X, Pencil, Check, FileText, Video } from 'lucide-react';
+import { Plus, Trash2, X, Check, FileText, Video } from 'lucide-react';
 import { toast } from 'sonner';
 import { TaskDetailModal } from './TaskDetailModal';
 
@@ -47,6 +47,8 @@ export function KanbanBoard({ tasks }: { tasks: Task[] }) {
   const [newTitle, setNewTitle] = useState('');
   const [newPriority, setNewPriority] = useState('medium');
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
+  const [dragOverCol, setDragOverCol] = useState<string | null>(null);
+  const [draggingTaskId, setDraggingTaskId] = useState<string | null>(null);
 
   const invalidate = () => qc.invalidateQueries({ queryKey: ['my-tasks', user?.id] });
 
@@ -73,7 +75,43 @@ export function KanbanBoard({ tasks }: { tasks: Task[] }) {
     invalidate();
   };
 
-  // Tasks missing both capture_date and due_date → compacted into "Pendente"
+  const handleDragStart = (e: DragEvent, taskId: string) => {
+    e.dataTransfer.setData('taskId', taskId);
+    e.dataTransfer.effectAllowed = 'move';
+    setDraggingTaskId(taskId);
+  };
+
+  const handleDragOver = (e: DragEvent, colKey: string) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    setDragOverCol(colKey);
+  };
+
+  const handleDragLeave = () => {
+    setDragOverCol(null);
+  };
+
+  const handleDrop = async (e: DragEvent, newStatus: string) => {
+    e.preventDefault();
+    setDragOverCol(null);
+    setDraggingTaskId(null);
+    const taskId = e.dataTransfer.getData('taskId');
+    if (!taskId) return;
+
+    const task = tasks.find(t => t.id === taskId);
+    if (!task || task.status === newStatus) return;
+
+    // Optimistic update via invalidation
+    const { error } = await supabase.from('tasks').update({ status: newStatus }).eq('id', taskId);
+    if (error) {
+      toast.error('Erro ao mover tarefa');
+    } else {
+      const colLabel = STATUS_COLUMNS.find(c => c.key === newStatus)?.label;
+      toast.success(`Movido para ${colLabel}`);
+    }
+    invalidate();
+  };
+
   const pendingVideoTasks = tasks.filter(t => !t.capture_date && !t.due_date && t.status === 'todo');
   const regularTasks = tasks.filter(t => !(pendingVideoTasks.includes(t)));
 
@@ -86,9 +124,20 @@ export function KanbanBoard({ tasks }: { tasks: Task[] }) {
           const colTasks = isPendingCol ? [] : regularTasks.filter(t => t.status === col.key);
           const visibleTasks = colTasks.slice(0, MAX_VISIBLE_TASKS);
           const hiddenCount = colTasks.length - visibleTasks.length;
+          const isDropTarget = dragOverCol === col.key && !isPendingCol;
 
           return (
-            <div key={col.key} className="rounded-2xl border border-white/10 bg-white/[0.02] p-4 min-h-[200px]">
+            <div
+              key={col.key}
+              className={`rounded-2xl border p-4 min-h-[200px] transition-all duration-200 ${
+                isDropTarget
+                  ? 'border-brand-orange/50 bg-brand-orange/[0.05] scale-[1.02]'
+                  : 'border-white/10 bg-white/[0.02]'
+              }`}
+              onDragOver={!isPendingCol ? (e) => handleDragOver(e, col.key) : undefined}
+              onDragLeave={!isPendingCol ? handleDragLeave : undefined}
+              onDrop={!isPendingCol ? (e) => handleDrop(e, col.key) : undefined}
+            >
               <div className="flex items-center gap-2 mb-4">
                 <div className={`w-2 h-2 rounded-full ${col.dot}`} />
                 <button
@@ -190,8 +239,13 @@ export function KanbanBoard({ tasks }: { tasks: Task[] }) {
                     {visibleTasks.map(task => (
                       <div
                         key={task.id}
+                        draggable
+                        onDragStart={(e) => handleDragStart(e, task.id)}
+                        onDragEnd={() => { setDraggingTaskId(null); setDragOverCol(null); }}
                         onClick={() => setSelectedTask(task)}
-                        className={`group rounded-xl border border-white/10 bg-white/[0.03] p-3 cursor-pointer hover:border-white/20 hover:bg-white/[0.05] transition-all ${task.status === 'done' ? 'opacity-50' : ''}`}
+                        className={`group rounded-xl border border-white/10 bg-white/[0.03] p-3 cursor-grab active:cursor-grabbing hover:border-white/20 hover:bg-white/[0.05] transition-all ${
+                          task.status === 'done' ? 'opacity-50' : ''
+                        } ${draggingTaskId === task.id ? 'opacity-40 scale-95' : ''}`}
                       >
                         <div className="flex items-start justify-between gap-2">
                           <p className={`text-sm text-white ${task.status === 'done' ? 'line-through' : ''}`}>{task.title}</p>
