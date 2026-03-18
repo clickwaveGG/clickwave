@@ -10,6 +10,7 @@ import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
+import { FloatingSelect } from '@/components/ui/floating-select';
 import { toast } from 'sonner';
 
 const SIZE_CONFIG = {
@@ -383,19 +384,24 @@ export default function ClientsPage() {
                     <div key={idx} className="rounded-lg border border-white/5 bg-white/[0.02] p-3">
                       <div className="flex items-center gap-2 mb-2">
                         <span className="text-[10px] font-mono text-brand-orange/60 w-5 text-center shrink-0">{idx + 1}</span>
-                        <select value={s.service_name} onChange={e => updateAddServiceRow(idx, 'service_name', e.target.value)} className={`flex-1 ${inputClass}`}>
-                          <option value="">Selecionar serviço...</option>
-                          {SERVICE_PRESETS.map(sp => <option key={sp} value={sp}>{sp}</option>)}
-                        </select>
+                        <FloatingSelect
+                          value={s.service_name}
+                          onChange={val => updateAddServiceRow(idx, 'service_name', val)}
+                          options={SERVICE_PRESETS.map(sp => ({ value: sp, label: sp }))}
+                          placeholder="Selecionar serviço..."
+                          className="flex-1"
+                        />
                         <button onClick={() => setAddServiceRows(prev => prev.length === 1 ? [emptyService()] : prev.filter((_, i) => i !== idx))} className="text-white/15 hover:text-red-400 shrink-0"><Trash2 className="w-3.5 h-3.5" /></button>
                       </div>
                       <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
                         <div>
                           <label className="text-[9px] font-mono text-white/25 uppercase mb-1 block">Responsável</label>
-                          <select value={s.responsible_id} onChange={e => updateAddServiceRow(idx, 'responsible_id', e.target.value)} className={`w-full ${inputClass}`}>
-                            <option value="">Selecionar...</option>
-                            {profiles.map((p: any) => <option key={p.user_id} value={p.user_id}>{p.full_name}</option>)}
-                          </select>
+                          <FloatingSelect
+                            value={s.responsible_id}
+                            onChange={val => updateAddServiceRow(idx, 'responsible_id', val)}
+                            options={profiles.map((p: any) => ({ value: p.user_id, label: p.full_name }))}
+                            placeholder="Selecionar..."
+                          />
                         </div>
                         <div>
                           <label className="text-[9px] font-mono text-white/25 uppercase mb-1 flex items-center gap-1"><DollarSign className="w-3 h-3" /> Valor</label>
@@ -481,16 +487,25 @@ export default function ClientsPage() {
                       <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
                         <div>
                           <label className="text-[9px] font-mono text-white/25 uppercase mb-1 block">Responsável</label>
-                          <select value={row.assigned_to} onChange={e => updateTaskRow(idx, 'assigned_to', e.target.value)} className={`w-full ${inputClass}`}>
-                            <option value="">Selecionar...</option>
-                            {profiles.map((p: any) => <option key={p.user_id} value={p.user_id}>{p.full_name}</option>)}
-                          </select>
+                          <FloatingSelect
+                            value={row.assigned_to}
+                            onChange={val => updateTaskRow(idx, 'assigned_to', val)}
+                            options={profiles.map((p: any) => ({ value: p.user_id, label: p.full_name }))}
+                            placeholder="Selecionar..."
+                          />
                         </div>
                         <div>
                           <label className="text-[9px] font-mono text-white/25 uppercase mb-1 block">Prioridade</label>
-                          <select value={row.priority} onChange={e => updateTaskRow(idx, 'priority', e.target.value)} className={`w-full ${inputClass}`}>
-                            <option value="low">Baixa</option><option value="medium">Média</option><option value="high">Alta</option>
-                          </select>
+                          <FloatingSelect
+                            value={row.priority}
+                            onChange={val => updateTaskRow(idx, 'priority', val)}
+                            options={[
+                              { value: 'low', label: 'Baixa' },
+                              { value: 'medium', label: 'Média' },
+                              { value: 'high', label: 'Alta' },
+                            ]}
+                            placeholder="Prioridade..."
+                          />
                         </div>
                         <div>
                           <label className="text-[9px] font-mono text-white/25 uppercase mb-1 flex items-center gap-1"><CalendarDays className="w-3 h-3" /> Entrega</label>
@@ -604,11 +619,16 @@ export default function ClientsPage() {
             </div>
             <div>
               <label className="text-[10px] font-mono text-white/30 uppercase mb-1.5 block">Porte</label>
-              <select value={newClient.size} onChange={e => setNewClient(p => ({ ...p, size: e.target.value }))} className={`w-full ${inputClass}`}>
-                <option value="small">Pequeno Porte</option>
-                <option value="medium">Médio Porte</option>
-                <option value="large">Grande Porte</option>
-              </select>
+              <FloatingSelect
+                value={newClient.size}
+                onChange={val => setNewClient(p => ({ ...p, size: val }))}
+                options={[
+                  { value: 'small', label: 'Pequeno Porte' },
+                  { value: 'medium', label: 'Médio Porte' },
+                  { value: 'large', label: 'Grande Porte' },
+                ]}
+                placeholder="Selecionar porte..."
+              />
             </div>
             <div className="flex items-end gap-4">
               <label className="flex items-center gap-2 cursor-pointer">
@@ -633,19 +653,24 @@ export default function ClientsPage() {
                 <div key={idx} className="rounded-lg border border-white/5 bg-white/[0.02] p-3">
                   <div className="flex items-center gap-2 mb-2">
                     <span className="text-[10px] font-mono text-brand-orange/60 w-5 text-center shrink-0">{idx + 1}</span>
-                    <select value={s.service_name} onChange={e => updateService(idx, 'service_name', e.target.value)} className={`flex-1 ${inputClass}`}>
-                      <option value="">Selecionar serviço...</option>
-                      {SERVICE_PRESETS.map(sp => <option key={sp} value={sp}>{sp}</option>)}
-                    </select>
+                    <FloatingSelect
+                      value={s.service_name}
+                      onChange={val => updateService(idx, 'service_name', val)}
+                      options={SERVICE_PRESETS.map(sp => ({ value: sp, label: sp }))}
+                      placeholder="Selecionar serviço..."
+                      className="flex-1"
+                    />
                     <button onClick={() => setNewServices(prev => prev.length === 1 ? [emptyService()] : prev.filter((_, i) => i !== idx))} className="text-white/15 hover:text-red-400 shrink-0"><Trash2 className="w-3.5 h-3.5" /></button>
                   </div>
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
                     <div>
                       <label className="text-[9px] font-mono text-white/25 uppercase mb-1 block">Responsável</label>
-                      <select value={s.responsible_id} onChange={e => updateService(idx, 'responsible_id', e.target.value)} className={`w-full ${inputClass}`}>
-                        <option value="">Selecionar...</option>
-                        {profiles.map((p: any) => <option key={p.user_id} value={p.user_id}>{p.full_name}</option>)}
-                      </select>
+                      <FloatingSelect
+                        value={s.responsible_id}
+                        onChange={val => updateService(idx, 'responsible_id', val)}
+                        options={profiles.map((p: any) => ({ value: p.user_id, label: p.full_name }))}
+                        placeholder="Selecionar..."
+                      />
                     </div>
                     <div>
                       <label className="text-[9px] font-mono text-white/25 uppercase mb-1 flex items-center gap-1"><DollarSign className="w-3 h-3" /> Valor</label>
