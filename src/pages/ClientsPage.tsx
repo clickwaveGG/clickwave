@@ -24,6 +24,17 @@ const SERVICE_PRESETS = [
   'Automações / Chatbot', 'Gestão de Redes Sociais', 'Branding', 'Outro',
 ];
 
+// Mapeamento de serviço → responsável padrão por user_id
+const SERVICE_DEFAULT_RESPONSIBLE: Record<string, string> = {
+  'Vídeos': '46edee23-fcc6-47c6-88a7-9ea7d9ca60aa',                // João Victor
+  'Site / Landing Page': '064b66b1-ea4b-4441-b63b-75d3bf749c72',   // Leonardo
+  'Tráfego Pago': '6aa5383c-cb63-46e4-bd03-478d0c1456a3',          // Pedro Antônio
+  'Posts / Design': 'db42a91a-2e8c-4931-9ded-dcb99114447c',         // Willer
+  'Branding': 'db42a91a-2e8c-4931-9ded-dcb99114447c',              // Willer
+  'Automações / Chatbot': '8f6ebe49-fd36-414c-bb50-7b51dcaf684b',  // Kauan Cabral
+  'Gestão de Redes Sociais': '064b66b1-ea4b-4441-b63b-75d3bf749c72', // Leonardo
+};
+
 interface NewTaskRow {
   title: string;
   description: string;
@@ -319,7 +330,7 @@ export default function ClientsPage() {
           validServices.map(s => ({
             client_id: client.id,
             service_name: s.service_name.trim(),
-            responsible_id: s.responsible_id || null,
+            responsible_id: s.responsible_id || SERVICE_DEFAULT_RESPONSIBLE[s.service_name.trim()] || null,
             price: s.price ? parseFloat(s.price) : 0,
             quantity_per_month: s.quantity_per_month ? parseInt(s.quantity_per_month) : null,
           }))
@@ -339,7 +350,7 @@ export default function ClientsPage() {
                 ? `${s.service_name} ${i + 1}/${count} — ${newClient.name.trim()}`
                 : `${s.service_name} — ${newClient.name.trim()}`,
               client_name: newClient.name.trim(),
-              assigned_to: s.responsible_id || user!.id,
+              assigned_to: s.responsible_id || SERVICE_DEFAULT_RESPONSIBLE[s.service_name.trim()] || user!.id,
               created_by: user!.id,
               price: s.price ? parseFloat(s.price) / count : null,
               status: 'todo' as const,
@@ -421,7 +432,7 @@ export default function ClientsPage() {
         valid.map(s => ({
           client_id: clientId,
           service_name: s.service_name.trim(),
-          responsible_id: s.responsible_id || null,
+          responsible_id: s.responsible_id || SERVICE_DEFAULT_RESPONSIBLE[s.service_name.trim()] || null,
           price: s.price ? parseFloat(s.price) : 0,
           quantity_per_month: s.quantity_per_month ? parseInt(s.quantity_per_month) : null,
         }))
@@ -439,7 +450,7 @@ export default function ClientsPage() {
               ? `${s.service_name.trim()} ${i + 1}/${count} — ${clientName}`
               : `${s.service_name.trim()} — ${clientName}`,
             client_name: clientName,
-            assigned_to: s.responsible_id || user!.id,
+            assigned_to: s.responsible_id || SERVICE_DEFAULT_RESPONSIBLE[s.service_name.trim()] || user!.id,
             created_by: user!.id,
             price: s.price ? parseFloat(s.price) / count : null,
             status: 'todo' as const,
@@ -476,11 +487,25 @@ export default function ClientsPage() {
   };
 
   const updateService = (i: number, field: keyof ServiceRow, value: string) => {
-    setNewServices(prev => prev.map((r, idx) => (idx === i ? { ...r, [field]: value } : r)));
+    setNewServices(prev => prev.map((r, idx) => {
+      if (idx !== i) return r;
+      const updated = { ...r, [field]: value };
+      if (field === 'service_name' && SERVICE_DEFAULT_RESPONSIBLE[value] && !r.responsible_id) {
+        updated.responsible_id = SERVICE_DEFAULT_RESPONSIBLE[value];
+      }
+      return updated;
+    }));
   };
 
   const updateAddServiceRow = (i: number, field: keyof ServiceRow, value: string) => {
-    setAddServiceRows(prev => prev.map((r, idx) => (idx === i ? { ...r, [field]: value } : r)));
+    setAddServiceRows(prev => prev.map((r, idx) => {
+      if (idx !== i) return r;
+      const updated = { ...r, [field]: value };
+      if (field === 'service_name' && SERVICE_DEFAULT_RESPONSIBLE[value] && !r.responsible_id) {
+        updated.responsible_id = SERVICE_DEFAULT_RESPONSIBLE[value];
+      }
+      return updated;
+    }));
   };
 
   const getTasksForClient = (clientName: string) =>
