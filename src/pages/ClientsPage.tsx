@@ -4,7 +4,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import {
   Building2, Plus, ChevronDown, ChevronRight, CheckCircle2, Clock, X,
-  ListTodo, Trash2, DollarSign, Video, CalendarDays, RefreshCw, Package, AlertTriangle, Layers
+  ListTodo, Trash2, DollarSign, Video, CalendarDays, RefreshCw, Package, AlertTriangle, Layers, Pencil
 } from 'lucide-react';
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
@@ -256,6 +256,8 @@ export default function ClientsPage() {
   const [addServiceRows, setAddServiceRows] = useState<ServiceRow[]>([emptyService()]);
   const [deleteClientId, setDeleteClientId] = useState<string | null>(null);
   const [taskRows, setTaskRows] = useState<NewTaskRow[]>([emptyTask()]);
+  const [editingClient, setEditingClient] = useState<string | null>(null);
+  const [editForm, setEditForm] = useState({ name: '', size: 'small', is_recurring: false, notes: '', contact_info: '' });
 
   // New client form
   const [newClient, setNewClient] = useState({
@@ -436,6 +438,25 @@ export default function ClientsPage() {
     onError: () => toast.error('Erro ao remover serviço'),
   });
 
+  const updateClientMutation = useMutation({
+    mutationFn: async () => {
+      if (!editingClient || !editForm.name.trim()) throw new Error('Nome obrigatório');
+      const { error } = await supabase.from('clients').update({
+        name: editForm.name.trim(),
+        size: editForm.size,
+        is_recurring: editForm.is_recurring,
+        notes: editForm.notes || null,
+        contact_info: editForm.contact_info || null,
+      }).eq('id', editingClient);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      invalidateAll();
+      setEditingClient(null);
+      toast.success('Cliente atualizado!');
+    },
+    onError: (e: any) => toast.error(e.message || 'Erro ao atualizar cliente'),
+  });
   const addServicesMutation = useMutation({
     mutationFn: async ({ clientId, clientName, services }: { clientId: string; clientName: string; services: ServiceRow[] }) => {
       const valid = services.filter(s => s.service_name.trim());
@@ -570,6 +591,19 @@ export default function ClientsPage() {
           <span className={`text-[9px] font-mono px-2 py-0.5 rounded border shrink-0 ${sizeConf.color}`}>
             {sizeConf.label.toUpperCase()}
           </span>
+          {isAdmin && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                setEditingClient(editingClient === client.id ? null : client.id);
+                setEditForm({ name: client.name, size: client.size, is_recurring: client.is_recurring, notes: client.notes || '', contact_info: client.contact_info || '' });
+              }}
+              className="text-white/15 hover:text-brand-orange transition-colors shrink-0"
+              title="Editar cliente"
+            >
+              <Pencil className="w-4 h-4" />
+            </button>
+          )}
           <button
             onClick={(e) => { e.stopPropagation(); setDeleteClientId(client.id); }}
             className="text-white/15 hover:text-red-400 transition-colors shrink-0"
@@ -589,8 +623,52 @@ export default function ClientsPage() {
 
         {isExpanded && (
           <div className="border-t border-white/5 p-5 space-y-5">
+            {/* Edit Client Form */}
+            {editingClient === client.id && (
+              <div className="rounded-xl border border-brand-orange/20 bg-white/[0.02] p-4 space-y-4">
+                <h4 className="text-sm font-mono text-white/50 uppercase tracking-wider">Editar Cliente</h4>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div>
+                    <label className="text-[10px] font-mono text-white/30 uppercase mb-1.5 block">Nome</label>
+                    <input value={editForm.name} onChange={e => setEditForm(p => ({ ...p, name: e.target.value }))} className={`w-full ${inputClass}`} />
+                  </div>
+                  <div>
+                    <label className="text-[10px] font-mono text-white/30 uppercase mb-1.5 block">Porte</label>
+                    <FloatingSelect
+                      value={editForm.size}
+                      onChange={val => setEditForm(p => ({ ...p, size: val }))}
+                      options={[
+                        { value: 'small', label: 'Pequeno Porte' },
+                        { value: 'medium', label: 'Médio Porte' },
+                        { value: 'large', label: 'Grande Porte' },
+                      ]}
+                      placeholder="Selecionar porte..."
+                    />
+                  </div>
+                  <div className="flex items-end">
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <input type="checkbox" checked={editForm.is_recurring} onChange={e => setEditForm(p => ({ ...p, is_recurring: e.target.checked }))} className="rounded border-white/20 bg-white/5 text-brand-orange focus:ring-brand-orange/30" />
+                      <span className="text-sm text-white/50">Recorrente</span>
+                    </label>
+                  </div>
+                </div>
+                <div>
+                  <label className="text-[10px] font-mono text-white/30 uppercase mb-1.5 block">Contato</label>
+                  <input value={editForm.contact_info} onChange={e => setEditForm(p => ({ ...p, contact_info: e.target.value }))} placeholder="Telefone, e-mail..." className={`w-full ${inputClass}`} />
+                </div>
+                <div>
+                  <label className="text-[10px] font-mono text-white/30 uppercase mb-1.5 block">Observações</label>
+                  <textarea value={editForm.notes} onChange={e => setEditForm(p => ({ ...p, notes: e.target.value }))} rows={2} className={`w-full ${inputClass} resize-none`} />
+                </div>
+                <div className="flex justify-end gap-3">
+                  <button onClick={() => setEditingClient(null)} className="px-4 py-1.5 rounded-lg text-xs text-white/30 hover:text-white/60">Cancelar</button>
+                  <button onClick={() => updateClientMutation.mutate()} className="px-4 py-1.5 rounded-lg bg-brand-orange text-white text-xs font-medium hover:bg-brand-orange/90 transition-colors">Salvar</button>
+                </div>
+              </div>
+            )}
+
             {/* Notes */}
-            {client.notes && (
+            {client.notes && editingClient !== client.id && (
               <p className="text-xs text-white/40 italic">{client.notes}</p>
             )}
 
