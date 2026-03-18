@@ -62,9 +62,10 @@ interface GroupedTaskListProps {
   profiles: any[];
   inputClass: string;
   onUpdateDate: (taskId: string, field: 'due_date' | 'capture_date', value: string) => void;
+  onDeleteTask: (taskId: string) => void;
 }
 
-function GroupedTaskList({ tasks, profiles, inputClass, onUpdateDate }: GroupedTaskListProps) {
+function GroupedTaskList({ tasks, profiles, inputClass, onUpdateDate, onDeleteTask }: GroupedTaskListProps) {
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
 
   // Group tasks by service base key
