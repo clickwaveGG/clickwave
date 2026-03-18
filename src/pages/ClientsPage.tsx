@@ -759,10 +759,12 @@ export default function ClientsPage() {
                           <label className="text-[9px] font-mono text-white/25 uppercase mb-1 flex items-center gap-1"><Video className="w-3 h-3" /> Captação</label>
                           <input type="date" value={row.capture_date} onChange={e => updateTaskRow(idx, 'capture_date', e.target.value)} className={`w-full ${inputClass}`} />
                         </div>
+                        {isAdmin && (
                         <div>
                           <label className="text-[9px] font-mono text-white/25 uppercase mb-1 flex items-center gap-1"><DollarSign className="w-3 h-3" /> R$</label>
                           <input type="number" step="0.01" min="0" value={row.price} onChange={e => updateTaskRow(idx, 'price', e.target.value)} placeholder="0,00" className={`w-full ${inputClass}`} />
                         </div>
+                        )}
                       </div>
                     </div>
                   ))}
