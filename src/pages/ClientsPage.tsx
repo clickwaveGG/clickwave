@@ -487,10 +487,12 @@ export default function ClientsPage() {
                       <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
                         <div>
                           <label className="text-[9px] font-mono text-white/25 uppercase mb-1 block">Responsável</label>
-                          <select value={row.assigned_to} onChange={e => updateTaskRow(idx, 'assigned_to', e.target.value)} className={`w-full ${inputClass}`}>
-                            <option value="">Selecionar...</option>
-                            {profiles.map((p: any) => <option key={p.user_id} value={p.user_id}>{p.full_name}</option>)}
-                          </select>
+                          <FloatingSelect
+                            value={row.assigned_to}
+                            onChange={val => updateTaskRow(idx, 'assigned_to', val)}
+                            options={profiles.map((p: any) => ({ value: p.user_id, label: p.full_name }))}
+                            placeholder="Selecionar..."
+                          />
                         </div>
                         <div>
                           <label className="text-[9px] font-mono text-white/25 uppercase mb-1 block">Prioridade</label>
