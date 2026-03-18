@@ -186,6 +186,7 @@ function GroupedTaskList({ tasks, profiles, inputClass, onUpdateDate }: GroupedT
 }
 
 export default function ClientsPage() {
+  const { user } = useAuth();
   const queryClient = useQueryClient();
   const [expandedClient, setExpandedClient] = useState<string | null>(null);
   const [showNewClient, setShowNewClient] = useState(false);
