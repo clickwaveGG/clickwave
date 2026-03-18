@@ -93,7 +93,7 @@ function GroupedTaskList({ tasks, profiles, inputClass, onUpdateDate, onDeleteTa
     const assignee = profiles.find((p: any) => p.user_id === task.assigned_to);
     const isVideoTask = task.title?.toLowerCase().includes('vídeo') || task.title?.toLowerCase().includes('video');
     return (
-      <div key={task.id} className={`rounded-xl border border-white/10 bg-white/[0.02] p-4 ${task.status === 'done' ? 'opacity-50' : ''}`}>
+      <div key={task.id} className={`group/task rounded-xl border border-white/10 bg-white/[0.02] p-4 ${task.status === 'done' ? 'opacity-50' : ''}`}>
         <div className="flex items-start gap-3">
           {task.status === 'done' ? <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" /> : <Clock className="w-4 h-4 text-yellow-400 shrink-0 mt-0.5" />}
           <div className="flex-1 min-w-0">
