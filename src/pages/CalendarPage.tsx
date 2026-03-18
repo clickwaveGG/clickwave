@@ -392,6 +392,19 @@ export default function CalendarPage() {
                             <span className={`text-[10px] font-mono ${isDone ? 'text-emerald-400/60' : 'text-yellow-400/60'}`}>
                               • {isDone ? 'Concluída' : task.status === 'in_progress' ? 'Em andamento' : 'Pendente'}
                             </span>
+                            {isAdmin && (
+                              <button
+                                onClick={() => toggleTaskStatus(task.id, task.status)}
+                                className={`ml-auto flex items-center gap-1 text-[10px] font-mono px-2 py-1 rounded-lg border transition-all ${
+                                  isDone
+                                    ? 'border-yellow-500/30 text-yellow-400 hover:bg-yellow-500/10'
+                                    : 'border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/10'
+                                }`}
+                              >
+                                {isDone ? <RotateCcw className="w-3 h-3" /> : <CheckCircle2 className="w-3 h-3" />}
+                                {isDone ? 'Reabrir' : 'Concluir'}
+                              </button>
+                            )}
                           </div>
                         </div>
                       );
