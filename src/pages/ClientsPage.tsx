@@ -194,7 +194,7 @@ function GroupedTaskList({ tasks, profiles, inputClass, isAdmin, onUpdateDate, o
   };
 
   const renderSingleTask = (task: any) => {
-    return <SingleTaskRow key={task.id} task={task} profiles={profiles} inputClass={inputClass} onUpdateDate={onUpdateDate} onDeleteTask={onDeleteTask} />;
+    return <SingleTaskRow key={task.id} task={task} profiles={profiles} inputClass={inputClass} isAdmin={isAdmin} onUpdateDate={onUpdateDate} onDeleteTask={onDeleteTask} />;
   };
 
   return (
