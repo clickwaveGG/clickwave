@@ -362,6 +362,8 @@ export default function ClientsPage() {
     queryClient.invalidateQueries({ queryKey: ['client-services'] });
     queryClient.invalidateQueries({ queryKey: ['all-client-tasks'] });
     queryClient.invalidateQueries({ queryKey: ['my-tasks'] });
+    queryClient.invalidateQueries({ queryKey: ['calendar-tasks'] });
+    queryClient.invalidateQueries({ queryKey: ['recurring-completions'] });
   };
 
   const createClientMutation = useMutation({
@@ -913,6 +915,7 @@ export default function ClientsPage() {
                   isAdmin={isAdmin}
                   onUpdateDate={(taskId, field, value) => updateTaskDateMutation.mutate({ taskId, field, value })}
                   onDeleteTask={async (taskId) => {
+                    await supabase.from('recurring_task_completions').delete().eq('task_id', taskId);
                     await supabase.from('tasks').delete().eq('id', taskId);
                     invalidateAll();
                     toast.success('Tarefa removida!');
