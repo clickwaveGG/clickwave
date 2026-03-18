@@ -1,8 +1,9 @@
 import { useState, useMemo } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
-import { ChevronLeft, ChevronRight, CalendarDays, CheckCircle2, XCircle } from 'lucide-react';
+import { ChevronLeft, ChevronRight, CalendarDays, CheckCircle2, XCircle, RotateCcw } from 'lucide-react';
+import { toast } from 'sonner';
 
 type Task = {
   id: string;
@@ -45,12 +46,25 @@ const PRIORITY_COLORS: Record<string, string> = {
 
 export default function CalendarPage() {
   const { user, role } = useAuth();
+  const qc = useQueryClient();
   const isAdmin = role === 'admin';
   const now = new Date();
   const [year, setYear] = useState(now.getFullYear());
   const [month, setMonth] = useState(now.getMonth());
   const [selectedMiniDay, setSelectedMiniDay] = useState<number | null>(null);
   const [selectedMainDay, setSelectedMainDay] = useState<number | null>(null);
+
+  const toggleTaskStatus = async (taskId: string, currentStatus: string) => {
+    const newStatus = currentStatus === 'done' ? 'todo' : 'done';
+    const { error } = await supabase.from('tasks').update({ status: newStatus }).eq('id', taskId);
+    if (error) {
+      toast.error('Erro ao atualizar status');
+    } else {
+      toast.success(newStatus === 'done' ? 'Marcada como concluída' : 'Reaberta');
+      qc.invalidateQueries({ queryKey: ['calendar-tasks'] });
+      qc.invalidateQueries({ queryKey: ['my-tasks'] });
+    }
+  };
 
   const { data: allTasks = [] } = useQuery({
     queryKey: ['calendar-tasks', user?.id, isAdmin],
@@ -378,6 +392,19 @@ export default function CalendarPage() {
                             <span className={`text-[10px] font-mono ${isDone ? 'text-emerald-400/60' : 'text-yellow-400/60'}`}>
                               • {isDone ? 'Concluída' : task.status === 'in_progress' ? 'Em andamento' : 'Pendente'}
                             </span>
+                            {isAdmin && (
+                              <button
+                                onClick={() => toggleTaskStatus(task.id, task.status)}
+                                className={`ml-auto flex items-center gap-1 text-[10px] font-mono px-2 py-1 rounded-lg border transition-all ${
+                                  isDone
+                                    ? 'border-yellow-500/30 text-yellow-400 hover:bg-yellow-500/10'
+                                    : 'border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/10'
+                                }`}
+                              >
+                                {isDone ? <RotateCcw className="w-3 h-3" /> : <CheckCircle2 className="w-3 h-3" />}
+                                {isDone ? 'Reabrir' : 'Concluir'}
+                              </button>
+                            )}
                           </div>
                         </div>
                       );
@@ -440,6 +467,15 @@ export default function CalendarPage() {
                         <span className="text-[9px] text-white/25 font-mono shrink-0">
                           {t.assigned_to ? profileMap[t.assigned_to]?.split(' ')[0] : '?'}
                         </span>
+                        {isAdmin && (
+                          <button
+                            onClick={() => toggleTaskStatus(t.id, t.status)}
+                            className="text-yellow-400 hover:text-yellow-300 transition-colors shrink-0"
+                            title="Reabrir tarefa"
+                          >
+                            <RotateCcw className="w-3 h-3" />
+                          </button>
+                        )}
                       </div>
                     ))}
                   </div>
@@ -456,6 +492,15 @@ export default function CalendarPage() {
                         <span className="text-[9px] text-white/25 font-mono shrink-0">
                           {t.assigned_to ? profileMap[t.assigned_to]?.split(' ')[0] : '?'}
                         </span>
+                        {isAdmin && (
+                          <button
+                            onClick={() => toggleTaskStatus(t.id, t.status)}
+                            className="text-emerald-400 hover:text-emerald-300 transition-colors shrink-0"
+                            title="Marcar como concluída"
+                          >
+                            <CheckCircle2 className="w-3 h-3" />
+                          </button>
+                        )}
                       </div>
                     ))}
                   </div>
