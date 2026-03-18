@@ -215,12 +215,42 @@ export default function ClientsPage() {
     onError: () => toast.error('Erro ao remover cliente'),
   });
 
+  const addServicesMutation = useMutation({
+    mutationFn: async ({ clientId, clientName, services }: { clientId: string; clientName: string; services: ServiceRow[] }) => {
+      const valid = services.filter(s => s.service_name.trim());
+      if (valid.length === 0) throw new Error('Adicione ao menos um serviço');
+      const { error } = await supabase.from('client_services').insert(
+        valid.map(s => ({
+          client_id: clientId,
+          service_name: s.service_name.trim(),
+          responsible_id: s.responsible_id || null,
+          price: s.price ? parseFloat(s.price) : 0,
+          quantity_per_month: s.quantity_per_month ? parseInt(s.quantity_per_month) : null,
+          due_date: s.due_date || null,
+          capture_date: s.capture_date || null,
+        }))
+      );
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      invalidateAll();
+      setAddServiceRows([emptyService()]);
+      setShowAddService(null);
+      toast.success('Serviços adicionados!');
+    },
+    onError: (e: any) => toast.error(e.message || 'Erro ao adicionar serviços'),
+  });
+
   const updateTaskRow = (i: number, field: keyof NewTaskRow, value: string) => {
     setTaskRows(prev => prev.map((r, idx) => (idx === i ? { ...r, [field]: value } : r)));
   };
 
   const updateService = (i: number, field: keyof ServiceRow, value: string) => {
     setNewServices(prev => prev.map((r, idx) => (idx === i ? { ...r, [field]: value } : r)));
+  };
+
+  const updateAddServiceRow = (i: number, field: keyof ServiceRow, value: string) => {
+    setAddServiceRows(prev => prev.map((r, idx) => (idx === i ? { ...r, [field]: value } : r)));
   };
 
   const getTasksForClient = (clientName: string) =>
