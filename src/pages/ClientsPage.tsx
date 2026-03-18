@@ -787,6 +787,7 @@ export default function ClientsPage() {
                   tasks={clientTasks}
                   profiles={profiles}
                   inputClass={inputClass}
+                  isAdmin={isAdmin}
                   onUpdateDate={(taskId, field, value) => updateTaskDateMutation.mutate({ taskId, field, value })}
                   onDeleteTask={async (taskId) => {
                     await supabase.from('tasks').delete().eq('id', taskId);
