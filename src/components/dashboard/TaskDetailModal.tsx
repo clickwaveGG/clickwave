@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useQueryClient } from '@tanstack/react-query';
-import { X, Check, Pencil, Calendar, User, Clock, FileText, Tag } from 'lucide-react';
+import { X, Check, Pencil, Calendar, User, Clock, FileText, Tag, Video } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 
@@ -18,6 +18,7 @@ interface Task {
   is_team_task: boolean;
   created_at: string;
   updated_at: string;
+  capture_date?: string | null;
 }
 
 const STATUS_OPTIONS = [
@@ -47,10 +48,15 @@ export function TaskDetailModal({ task, onClose }: Props) {
   const [status, setStatus] = useState(task.status);
   const [priority, setPriority] = useState(task.priority);
   const [dueDate, setDueDate] = useState(task.due_date ? task.due_date.split('T')[0] : '');
+  const [captureDate, setCaptureDate] = useState(task.capture_date ? task.capture_date.split('T')[0] : '');
   const [clientName, setClientName] = useState(task.client_name || '');
   const [description, setDescription] = useState(task.description || '');
 
-  const invalidate = () => qc.invalidateQueries({ queryKey: ['my-tasks', user?.id] });
+  const invalidate = () => {
+    qc.invalidateQueries({ queryKey: ['my-tasks', user?.id] });
+    qc.invalidateQueries({ queryKey: ['calendar-tasks'] });
+    qc.invalidateQueries({ queryKey: ['all-client-tasks'] });
+  };
 
   const save = async () => {
     const { error } = await supabase.from('tasks').update({
@@ -58,6 +64,7 @@ export function TaskDetailModal({ task, onClose }: Props) {
       status,
       priority,
       due_date: dueDate || null,
+      capture_date: captureDate || null,
       client_name: clientName.trim() || null,
       description: description.trim() || null,
     }).eq('id', task.id);
@@ -69,6 +76,9 @@ export function TaskDetailModal({ task, onClose }: Props) {
 
   const currentStatus = STATUS_OPTIONS.find(s => s.key === (editing ? status : task.status));
   const currentPriority = PRIORITIES.find(p => p.value === (editing ? priority : task.priority));
+
+  // Show capture_date field if task title suggests video
+  const isVideoTask = task.title.toLowerCase().includes('vídeo') || task.title.toLowerCase().includes('video');
 
   const formatDate = (d: string) => new Date(d).toLocaleDateString('pt-BR', {
     day: '2-digit', month: 'long', year: 'numeric',
@@ -121,7 +131,7 @@ export function TaskDetailModal({ task, onClose }: Props) {
           )}
 
           {/* Info grid */}
-          <div className="grid grid-cols-2 gap-3">
+          <div className={`grid ${isVideoTask ? 'grid-cols-2 md:grid-cols-3' : 'grid-cols-2'} gap-3`}>
             {/* Cliente */}
             <div className="rounded-xl border border-white/5 bg-white/[0.02] p-3">
               <div className="flex items-center gap-1.5 mb-1.5">
@@ -189,6 +199,28 @@ export function TaskDetailModal({ task, onClose }: Props) {
                 </p>
               )}
             </div>
+
+            {/* Data de captação (only for video tasks) */}
+            {isVideoTask && (
+              <div className="rounded-xl border border-purple-500/10 bg-purple-500/[0.03] p-3">
+                <div className="flex items-center gap-1.5 mb-1.5">
+                  <Video className="w-3 h-3 text-purple-400/50" />
+                  <span className="text-[9px] font-mono uppercase tracking-wider text-purple-400/40">Captação</span>
+                </div>
+                {editing ? (
+                  <input
+                    type="date"
+                    value={captureDate}
+                    onChange={e => setCaptureDate(e.target.value)}
+                    className="w-full bg-transparent text-sm text-white outline-none border-b border-purple-400/20 pb-1 focus:border-purple-400/40 [color-scheme:dark]"
+                  />
+                ) : (
+                  <p className="text-sm text-purple-300/60">
+                    {task.capture_date ? formatDate(task.capture_date) : <span className="italic text-white/15">Não definida</span>}
+                  </p>
+                )}
+              </div>
+            )}
 
             {/* Status */}
             <div className="rounded-xl border border-white/5 bg-white/[0.02] p-3">
