@@ -256,6 +256,8 @@ export default function ClientsPage() {
   const [addServiceRows, setAddServiceRows] = useState<ServiceRow[]>([emptyService()]);
   const [deleteClientId, setDeleteClientId] = useState<string | null>(null);
   const [taskRows, setTaskRows] = useState<NewTaskRow[]>([emptyTask()]);
+  const [editingClient, setEditingClient] = useState<string | null>(null);
+  const [editForm, setEditForm] = useState({ name: '', size: 'small', is_recurring: false, notes: '', contact_info: '' });
 
   // New client form
   const [newClient, setNewClient] = useState({
