@@ -375,10 +375,12 @@ export default function ClientsPage() {
                           <label className="text-[9px] font-mono text-white/25 uppercase mb-1 flex items-center gap-1"><CalendarDays className="w-3 h-3" /> Entrega</label>
                           <input type="date" value={s.due_date} onChange={e => updateAddServiceRow(idx, 'due_date', e.target.value)} className={`w-full ${inputClass}`} />
                         </div>
+                        {s.service_name.toLowerCase().includes('vídeo') && (
                         <div>
                           <label className="text-[9px] font-mono text-white/25 uppercase mb-1 flex items-center gap-1"><Video className="w-3 h-3" /> Captação</label>
                           <input type="date" value={s.capture_date} onChange={e => updateAddServiceRow(idx, 'capture_date', e.target.value)} className={`w-full ${inputClass}`} />
                         </div>
+                        )}
                       </div>
                     </div>
                   ))}
