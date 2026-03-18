@@ -626,7 +626,7 @@ export default function ClientsPage() {
                   {services.map((s: any) => {
                     const resp = profiles.find((p: any) => p.user_id === s.responsible_id);
                     return (
-                      <div key={s.id} className="rounded-xl border border-white/10 bg-white/[0.02] p-3">
+                      <div key={s.id} className="group/svc rounded-xl border border-white/10 bg-white/[0.02] p-3">
                         <div className="flex items-center gap-3">
                           <div className="flex-1 min-w-0">
                             <p className="text-sm text-white truncate">{s.service_name}</p>
