@@ -880,12 +880,11 @@ export default function ClientsPage() {
                       />
                     </div>
                     {isAdmin && (
-                    <div>
-                      <label className="text-[9px] font-mono text-white/25 uppercase mb-1 flex items-center gap-1"><DollarSign className="w-3 h-3" /> Valor</label>
-                      <input type="number" step="0.01" min="0" value={s.price} onChange={e => updateService(idx, 'price', e.target.value)} placeholder="0,00" className={`w-full ${inputClass}`} />
-                    </div>
+                      <div>
+                        <label className="text-[9px] font-mono text-white/25 uppercase mb-1 flex items-center gap-1"><DollarSign className="w-3 h-3" /> Valor</label>
+                        <input type="number" step="0.01" min="0" value={s.price} onChange={e => updateService(idx, 'price', e.target.value)} placeholder="0,00" className={`w-full ${inputClass}`} />
+                      </div>
                     )}
-                    </div>
                     <div>
                       <label className="text-[9px] font-mono text-white/25 uppercase mb-1 block">Qtd/mês</label>
                       <input type="number" min="0" value={s.quantity_per_month} onChange={e => updateService(idx, 'quantity_per_month', e.target.value)} placeholder="—" className={`w-full ${inputClass}`} />
