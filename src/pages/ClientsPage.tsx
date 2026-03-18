@@ -232,16 +232,25 @@ export default function ClientsPage() {
       );
       if (error) throw error;
 
-      // Automatically create tasks for responsible users
-      const taskInserts = valid.map(s => ({
-        title: `${s.service_name.trim()} — ${clientName}`,
-        client_name: clientName,
-        assigned_to: s.responsible_id || user!.id,
-        created_by: user!.id,
-        price: s.price ? parseFloat(s.price) : null,
-        status: 'todo' as const,
-        priority: 'medium' as const,
-      }));
+      // Automatically create tasks for responsible users (N tasks if quantity_per_month is set)
+      const taskInserts: any[] = [];
+      valid.forEach(s => {
+        const qty = s.quantity_per_month ? parseInt(s.quantity_per_month) : 1;
+        const count = qty > 0 ? qty : 1;
+        for (let i = 0; i < count; i++) {
+          taskInserts.push({
+            title: count > 1
+              ? `${s.service_name.trim()} ${i + 1}/${count} — ${clientName}`
+              : `${s.service_name.trim()} — ${clientName}`,
+            client_name: clientName,
+            assigned_to: s.responsible_id || user!.id,
+            created_by: user!.id,
+            price: s.price ? parseFloat(s.price) / count : null,
+            status: 'todo' as const,
+            priority: 'medium' as const,
+          });
+        }
+      });
       await supabase.from('tasks').insert(taskInserts);
     },
     onSuccess: () => {
