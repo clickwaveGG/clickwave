@@ -4,8 +4,12 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import {
   Building2, Plus, ChevronDown, ChevronRight, CheckCircle2, Clock, X,
-  ListTodo, Trash2, DollarSign, Video, CalendarDays, RefreshCw, Package
+  ListTodo, Trash2, DollarSign, Video, CalendarDays, RefreshCw, Package, AlertTriangle
 } from 'lucide-react';
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { toast } from 'sonner';
 
 const SIZE_CONFIG = {
