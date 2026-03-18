@@ -58,6 +58,8 @@ export default function ClientsPage() {
   const [expandedClient, setExpandedClient] = useState<string | null>(null);
   const [showNewClient, setShowNewClient] = useState(false);
   const [showNewTask, setShowNewTask] = useState<string | null>(null);
+  const [showAddService, setShowAddService] = useState<string | null>(null);
+  const [addServiceRows, setAddServiceRows] = useState<ServiceRow[]>([emptyService()]);
   const [deleteClientId, setDeleteClientId] = useState<string | null>(null);
   const [taskRows, setTaskRows] = useState<NewTaskRow[]>([emptyTask()]);
 
