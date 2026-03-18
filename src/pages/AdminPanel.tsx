@@ -72,13 +72,14 @@ export default function AdminPanel() {
     },
   });
 
-  // Financial calculations
-  const totalRevenue = allServices.reduce((sum: number, s: any) => sum + (Number(s.price) || 0), 0);
-  const totalProfit = allServices.reduce((sum: number, s: any) => sum + (Number(s.profit) || 0), 0);
-  const totalPayments = allServices.reduce((sum: number, s: any) => sum + (Number(s.member_payment) || 0), 0);
+  // Financial calculations — exclude completed (one-off) services
+  const activeServices = allServices.filter((s: any) => !s.completed);
+  const totalRevenue = activeServices.reduce((sum: number, s: any) => sum + (Number(s.price) || 0), 0);
+  const totalProfit = activeServices.reduce((sum: number, s: any) => sum + (Number(s.profit) || 0), 0);
+  const totalPayments = activeServices.reduce((sum: number, s: any) => sum + (Number(s.member_payment) || 0), 0);
 
   const memberPaymentsMap: Record<string, { name: string; total: number }> = {};
-  allServices.forEach((s: any) => {
+  activeServices.forEach((s: any) => {
     if (s.responsible_id && (Number(s.member_payment) || 0) > 0) {
       if (!memberPaymentsMap[s.responsible_id]) {
         memberPaymentsMap[s.responsible_id] = { name: s.responsible_name || '—', total: 0 };
@@ -177,7 +178,7 @@ export default function AdminPanel() {
             totalPayments={totalPayments}
             memberPayments={memberPayments}
           />
-          <AdminServiceProfitTable services={allServices as any} />
+          <AdminServiceProfitTable services={activeServices as any} />
         </div>
       )}
 

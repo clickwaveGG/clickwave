@@ -503,6 +503,16 @@ export default function ClientsPage() {
     onError: () => toast.error('Erro ao remover serviço'),
   });
 
+  const toggleServiceCompletedMutation = useMutation({
+    mutationFn: async ({ id, completed }: { id: string; completed: boolean }) => {
+      const { error } = await supabase.from('client_services').update({ completed } as any).eq('id', id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      invalidateAll();
+      toast.success('Status do serviço atualizado!');
+    },
+  });
   const updateClientMutation = useMutation({
     mutationFn: async () => {
       if (!editingClient || !editForm.name.trim()) throw new Error('Nome obrigatório');
@@ -811,10 +821,10 @@ export default function ClientsPage() {
                     const isTrafficSvc = isTrafficTask(s.service_name || '');
                     const showingForm = addTaskForService === s.id;
                     return (
-                      <div key={s.id} className="group/svc rounded-xl border border-white/10 bg-white/[0.02] p-3">
+                      <div key={s.id} className={`group/svc rounded-xl border p-3 ${s.completed ? 'border-emerald-500/20 bg-emerald-500/5 opacity-60' : 'border-white/10 bg-white/[0.02]'}`}>
                         <div className="flex items-center gap-3">
                           <div className="flex-1 min-w-0">
-                            <p className="text-sm text-white truncate">{s.service_name}</p>
+                            <p className={`text-sm truncate ${s.completed ? 'text-white/40 line-through' : 'text-white'}`}>{s.service_name}</p>
                             <div className="flex flex-wrap items-center gap-2 mt-1.5">
                               {resp && <span className="text-[10px] font-mono text-white/30">👤 {resp.full_name}</span>}
                               {s.quantity_per_month && (
@@ -831,20 +841,31 @@ export default function ClientsPage() {
                                 R$ {Number(s.price).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                               </span>
                             )}
-                            <button
-                              onClick={() => {
-                                if (showingForm) {
-                                  setAddTaskForService(null);
-                                } else {
-                                  setAddTaskForService(s.id);
-                                  setServiceTaskRows([{ title: '', due_date: '', capture_date: '' }]);
-                                }
-                              }}
-                              className="text-white/20 hover:text-brand-orange transition-colors opacity-0 group-hover/svc:opacity-100"
-                              title="Adicionar tarefa para este serviço"
-                            >
-                              <Plus className="w-3.5 h-3.5" />
-                            </button>
+                            {isAdmin && (
+                              <button
+                                onClick={() => toggleServiceCompletedMutation.mutate({ id: s.id, completed: !s.completed })}
+                                className={`transition-colors opacity-0 group-hover/svc:opacity-100 ${s.completed ? 'text-emerald-400 hover:text-white/40' : 'text-white/20 hover:text-emerald-400'}`}
+                                title={s.completed ? 'Marcar como ativo' : 'Marcar como concluído'}
+                              >
+                                <CheckCircle2 className="w-3.5 h-3.5" />
+                              </button>
+                            )}
+                            {!s.completed && (
+                              <button
+                                onClick={() => {
+                                  if (showingForm) {
+                                    setAddTaskForService(null);
+                                  } else {
+                                    setAddTaskForService(s.id);
+                                    setServiceTaskRows([{ title: '', due_date: '', capture_date: '' }]);
+                                  }
+                                }}
+                                className="text-white/20 hover:text-brand-orange transition-colors opacity-0 group-hover/svc:opacity-100"
+                                title="Adicionar tarefa para este serviço"
+                              >
+                                <Plus className="w-3.5 h-3.5" />
+                              </button>
+                            )}
                             <button
                               onClick={() => deleteServiceMutation.mutate(s.id)}
                               className="text-white/15 hover:text-red-400 transition-colors opacity-0 group-hover/svc:opacity-100"
