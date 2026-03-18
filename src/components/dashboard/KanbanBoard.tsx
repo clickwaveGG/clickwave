@@ -41,6 +41,7 @@ const PRIORITIES = [
 
 export function KanbanBoard({ tasks }: { tasks: Task[] }) {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const qc = useQueryClient();
   const [addingTo, setAddingTo] = useState<string | null>(null);
   const [newTitle, setNewTitle] = useState('');
