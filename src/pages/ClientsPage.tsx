@@ -396,10 +396,12 @@ export default function ClientsPage() {
                       <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
                         <div>
                           <label className="text-[9px] font-mono text-white/25 uppercase mb-1 block">Responsável</label>
-                          <select value={s.responsible_id} onChange={e => updateAddServiceRow(idx, 'responsible_id', e.target.value)} className={`w-full ${inputClass}`}>
-                            <option value="">Selecionar...</option>
-                            {profiles.map((p: any) => <option key={p.user_id} value={p.user_id}>{p.full_name}</option>)}
-                          </select>
+                          <FloatingSelect
+                            value={s.responsible_id}
+                            onChange={val => updateAddServiceRow(idx, 'responsible_id', val)}
+                            options={profiles.map((p: any) => ({ value: p.user_id, label: p.full_name }))}
+                            placeholder="Selecionar..."
+                          />
                         </div>
                         <div>
                           <label className="text-[9px] font-mono text-white/25 uppercase mb-1 flex items-center gap-1"><DollarSign className="w-3 h-3" /> Valor</label>
