@@ -809,9 +809,11 @@ export default function ClientsPage() {
           <h1 className="text-3xl md:text-4xl font-serif text-white"><span className="italic">Clientes.</span></h1>
           <p className="text-white/40 text-sm font-mono mt-2">Gerencie demandas e serviços por cliente</p>
         </div>
-        <button onClick={() => setShowNewClient(true)} className="flex items-center gap-2 px-4 py-2 rounded-xl bg-brand-orange/10 text-brand-orange border border-brand-orange/20 text-sm hover:bg-brand-orange/20 transition-colors">
-          <Plus className="w-4 h-4" /> Novo Cliente
-        </button>
+        {isAdmin && (
+          <button onClick={() => setShowNewClient(true)} className="flex items-center gap-2 px-4 py-2 rounded-xl bg-brand-orange/10 text-brand-orange border border-brand-orange/20 text-sm hover:bg-brand-orange/20 transition-colors">
+            <Plus className="w-4 h-4" /> Novo Cliente
+          </button>
+        )}
       </div>
 
       {/* New Client Form */}
