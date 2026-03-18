@@ -42,6 +42,7 @@ export type Database = {
         Row: {
           capture_date: string | null
           client_id: string
+          completed: boolean
           created_at: string
           due_date: string | null
           id: string
@@ -56,6 +57,7 @@ export type Database = {
         Insert: {
           capture_date?: string | null
           client_id: string
+          completed?: boolean
           created_at?: string
           due_date?: string | null
           id?: string
@@ -70,6 +72,7 @@ export type Database = {
         Update: {
           capture_date?: string | null
           client_id?: string
+          completed?: boolean
           created_at?: string
           due_date?: string | null
           id?: string
