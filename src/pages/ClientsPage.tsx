@@ -487,11 +487,25 @@ export default function ClientsPage() {
   };
 
   const updateService = (i: number, field: keyof ServiceRow, value: string) => {
-    setNewServices(prev => prev.map((r, idx) => (idx === i ? { ...r, [field]: value } : r)));
+    setNewServices(prev => prev.map((r, idx) => {
+      if (idx !== i) return r;
+      const updated = { ...r, [field]: value };
+      if (field === 'service_name' && SERVICE_DEFAULT_RESPONSIBLE[value] && !r.responsible_id) {
+        updated.responsible_id = SERVICE_DEFAULT_RESPONSIBLE[value];
+      }
+      return updated;
+    }));
   };
 
   const updateAddServiceRow = (i: number, field: keyof ServiceRow, value: string) => {
-    setAddServiceRows(prev => prev.map((r, idx) => (idx === i ? { ...r, [field]: value } : r)));
+    setAddServiceRows(prev => prev.map((r, idx) => {
+      if (idx !== i) return r;
+      const updated = { ...r, [field]: value };
+      if (field === 'service_name' && SERVICE_DEFAULT_RESPONSIBLE[value] && !r.responsible_id) {
+        updated.responsible_id = SERVICE_DEFAULT_RESPONSIBLE[value];
+      }
+      return updated;
+    }));
   };
 
   const getTasksForClient = (clientName: string) =>
