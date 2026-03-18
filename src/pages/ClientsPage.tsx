@@ -68,7 +68,7 @@ export default function ClientsPage() {
     name: '', size: 'small', is_recurring: false, notes: '',
   });
   const [newServices, setNewServices] = useState<ServiceRow[]>([emptyService()]);
-  const [createTasksOnAdd, setCreateTasksOnAdd] = useState(false);
+  
 
   const { data: clients = [] } = useQuery({
     queryKey: ['clients'],
@@ -148,8 +148,8 @@ export default function ClientsPage() {
         if (sErr) throw sErr;
       }
 
-      // Optionally create tasks from services
-      if (createTasksOnAdd && validServices.length > 0) {
+      // Automatically create tasks from services
+      if (validServices.length > 0) {
         const taskInserts = validServices.map(s => ({
           title: `${s.service_name} — ${newClient.name.trim()}`,
           client_name: newClient.name.trim(),
@@ -168,7 +168,7 @@ export default function ClientsPage() {
       invalidateAll();
       setNewClient({ name: '', size: 'small', is_recurring: false, notes: '' });
       setNewServices([emptyService()]);
-      setCreateTasksOnAdd(false);
+      
       setShowNewClient(false);
       toast.success('Cliente cadastrado com sucesso!');
     },
@@ -231,6 +231,20 @@ export default function ClientsPage() {
         }))
       );
       if (error) throw error;
+
+      // Automatically create tasks for responsible users
+      const taskInserts = valid.map(s => ({
+        title: `${s.service_name.trim()} — ${clientName}`,
+        client_name: clientName,
+        assigned_to: s.responsible_id || user!.id,
+        created_by: user!.id,
+        due_date: s.due_date || null,
+        capture_date: s.capture_date || null,
+        price: s.price ? parseFloat(s.price) : null,
+        status: 'todo' as const,
+        priority: 'medium' as const,
+      }));
+      await supabase.from('tasks').insert(taskInserts);
     },
     onSuccess: () => {
       invalidateAll();
@@ -620,11 +634,6 @@ export default function ClientsPage() {
             <button onClick={() => setNewServices(prev => [...prev, emptyService()])} className="flex items-center gap-1.5 text-xs text-white/30 hover:text-white/60 mt-2"><Plus className="w-3.5 h-3.5" /> Mais um serviço</button>
           </div>
 
-          {/* Create tasks toggle */}
-          <label className="flex items-center gap-2 cursor-pointer">
-            <input type="checkbox" checked={createTasksOnAdd} onChange={e => setCreateTasksOnAdd(e.target.checked)} className="rounded border-white/20 bg-white/5 text-brand-orange focus:ring-brand-orange/30" />
-            <span className="text-sm text-white/50">Criar tarefas automaticamente a partir dos serviços</span>
-          </label>
 
           {/* Actions */}
           <div className="flex items-center justify-end gap-3">
