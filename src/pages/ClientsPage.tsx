@@ -462,6 +462,22 @@ export default function ClientsPage() {
 
   const deleteClientMutation = useMutation({
     mutationFn: async (clientId: string) => {
+      // Find client name to clean up related tasks
+      const client = clients.find(c => c.id === clientId);
+      if (client) {
+        // Get task IDs for this client to clean up recurring completions
+        const { data: clientTasks } = await supabase
+          .from('tasks')
+          .select('id')
+          .ilike('client_name', client.name);
+        if (clientTasks && clientTasks.length > 0) {
+          const taskIds = clientTasks.map(t => t.id);
+          await supabase.from('recurring_task_completions').delete().in('task_id', taskIds);
+          await supabase.from('tasks').delete().in('id', taskIds);
+        }
+      }
+      // Delete services and then the client
+      await supabase.from('client_services').delete().eq('client_id', clientId);
       const { error } = await supabase.from('clients').delete().eq('id', clientId);
       if (error) throw error;
     },
