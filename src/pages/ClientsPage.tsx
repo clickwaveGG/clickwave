@@ -68,7 +68,7 @@ export default function ClientsPage() {
     name: '', size: 'small', is_recurring: false, notes: '',
   });
   const [newServices, setNewServices] = useState<ServiceRow[]>([emptyService()]);
-  const [createTasksOnAdd, setCreateTasksOnAdd] = useState(false);
+  
 
   const { data: clients = [] } = useQuery({
     queryKey: ['clients'],
