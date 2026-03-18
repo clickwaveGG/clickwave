@@ -634,11 +634,6 @@ export default function ClientsPage() {
             <button onClick={() => setNewServices(prev => [...prev, emptyService()])} className="flex items-center gap-1.5 text-xs text-white/30 hover:text-white/60 mt-2"><Plus className="w-3.5 h-3.5" /> Mais um serviço</button>
           </div>
 
-          {/* Create tasks toggle */}
-          <label className="flex items-center gap-2 cursor-pointer">
-            <input type="checkbox" checked={createTasksOnAdd} onChange={e => setCreateTasksOnAdd(e.target.checked)} className="rounded border-white/20 bg-white/5 text-brand-orange focus:ring-brand-orange/30" />
-            <span className="text-sm text-white/50">Criar tarefas automaticamente a partir dos serviços</span>
-          </label>
 
           {/* Actions */}
           <div className="flex items-center justify-end gap-3">
