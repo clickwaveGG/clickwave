@@ -577,14 +577,15 @@ export default function ClientsPage() {
             <div className="space-y-3">
               {newServices.map((s, idx) => (
                 <div key={idx} className="rounded-lg border border-white/5 bg-white/[0.02] p-3">
-                  <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
-                    <div className="col-span-2 md:col-span-1">
-                      <label className="text-[9px] font-mono text-white/25 uppercase mb-1 block">Serviço</label>
-                      <select value={s.service_name} onChange={e => updateService(idx, 'service_name', e.target.value)} className={`w-full ${inputClass}`}>
-                        <option value="">Selecionar...</option>
-                        {SERVICE_PRESETS.map(sp => <option key={sp} value={sp}>{sp}</option>)}
-                      </select>
-                    </div>
+                  <div className="flex items-center gap-2 mb-2">
+                    <span className="text-[10px] font-mono text-brand-orange/60 w-5 text-center shrink-0">{idx + 1}</span>
+                    <select value={s.service_name} onChange={e => updateService(idx, 'service_name', e.target.value)} className={`flex-1 ${inputClass}`}>
+                      <option value="">Selecionar serviço...</option>
+                      {SERVICE_PRESETS.map(sp => <option key={sp} value={sp}>{sp}</option>)}
+                    </select>
+                    <button onClick={() => setNewServices(prev => prev.length === 1 ? [emptyService()] : prev.filter((_, i) => i !== idx))} className="text-white/15 hover:text-red-400 shrink-0"><Trash2 className="w-3.5 h-3.5" /></button>
+                  </div>
+                  <div className="grid grid-cols-2 md:grid-cols-6 gap-2">
                     <div>
                       <label className="text-[9px] font-mono text-white/25 uppercase mb-1 block">Responsável</label>
                       <select value={s.responsible_id} onChange={e => updateService(idx, 'responsible_id', e.target.value)} className={`w-full ${inputClass}`}>
@@ -593,15 +594,20 @@ export default function ClientsPage() {
                       </select>
                     </div>
                     <div>
-                      <label className="text-[9px] font-mono text-white/25 uppercase mb-1 block">Valor (R$)</label>
+                      <label className="text-[9px] font-mono text-white/25 uppercase mb-1 flex items-center gap-1"><DollarSign className="w-3 h-3" /> Valor</label>
                       <input type="number" step="0.01" min="0" value={s.price} onChange={e => updateService(idx, 'price', e.target.value)} placeholder="0,00" className={`w-full ${inputClass}`} />
                     </div>
                     <div>
                       <label className="text-[9px] font-mono text-white/25 uppercase mb-1 block">Qtd/mês</label>
-                      <div className="flex items-center gap-1">
-                        <input type="number" min="0" value={s.quantity_per_month} onChange={e => updateService(idx, 'quantity_per_month', e.target.value)} placeholder="—" className={`w-full ${inputClass}`} />
-                        <button onClick={() => setNewServices(prev => prev.length === 1 ? [emptyService()] : prev.filter((_, i) => i !== idx))} className="text-white/15 hover:text-red-400 shrink-0"><Trash2 className="w-3.5 h-3.5" /></button>
-                      </div>
+                      <input type="number" min="0" value={s.quantity_per_month} onChange={e => updateService(idx, 'quantity_per_month', e.target.value)} placeholder="—" className={`w-full ${inputClass}`} />
+                    </div>
+                    <div>
+                      <label className="text-[9px] font-mono text-white/25 uppercase mb-1 flex items-center gap-1"><CalendarDays className="w-3 h-3" /> Entrega</label>
+                      <input type="date" value={s.due_date} onChange={e => updateService(idx, 'due_date', e.target.value)} className={`w-full ${inputClass}`} />
+                    </div>
+                    <div>
+                      <label className="text-[9px] font-mono text-white/25 uppercase mb-1 flex items-center gap-1"><Video className="w-3 h-3" /> Captação</label>
+                      <input type="date" value={s.capture_date} onChange={e => updateService(idx, 'capture_date', e.target.value)} className={`w-full ${inputClass}`} />
                     </div>
                   </div>
                 </div>
