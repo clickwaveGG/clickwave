@@ -150,8 +150,6 @@ export default function ClientsPage() {
           client_name: newClient.name.trim(),
           assigned_to: s.responsible_id || user!.id,
           created_by: user!.id,
-          due_date: s.due_date || null,
-          capture_date: s.capture_date || null,
           price: s.price ? parseFloat(s.price) : null,
           status: 'todo' as const,
           priority: 'medium' as const,
