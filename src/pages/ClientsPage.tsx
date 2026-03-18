@@ -513,8 +513,7 @@ export default function ClientsPage() {
       toast.success('Status do serviço atualizado!');
     },
   });
-
-
+  const updateClientMutation = useMutation({
     mutationFn: async () => {
       if (!editingClient || !editForm.name.trim()) throw new Error('Nome obrigatório');
       const { error } = await supabase.from('clients').update({
