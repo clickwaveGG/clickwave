@@ -639,11 +639,20 @@ export default function ClientsPage() {
                               {s.capture_date && <span className="text-[10px] font-mono text-purple-400/60">🎬 {new Date(s.capture_date).toLocaleDateString('pt-BR')}</span>}
                             </div>
                           </div>
-                          {Number(s.price) > 0 && (
-                            <span className="text-xs font-mono text-emerald-400/70 shrink-0">
-                              R$ {Number(s.price).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                            </span>
-                          )}
+                          <div className="flex items-center gap-2 shrink-0">
+                            {Number(s.price) > 0 && (
+                              <span className="text-xs font-mono text-emerald-400/70">
+                                R$ {Number(s.price).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                              </span>
+                            )}
+                            <button
+                              onClick={() => deleteServiceMutation.mutate(s.id)}
+                              className="text-white/15 hover:text-red-400 transition-colors opacity-0 group-hover/svc:opacity-100"
+                              title="Remover serviço"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
                         </div>
                       </div>
                     );
