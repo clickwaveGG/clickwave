@@ -50,7 +50,142 @@ const emptyService = (): ServiceRow => ({
   service_name: '', responsible_id: '', price: '', quantity_per_month: '',
 });
 
-export default function ClientsPage() {
+// Groups tasks like "Vídeos 1/10 — Client" into a single collapsible row
+function getServiceBaseKey(title: string): string {
+  // Match pattern like "ServiceName N/M — ClientName" and extract "ServiceName — ClientName"
+  const match = title.match(/^(.+?)\s+\d+\/\d+\s*(—.*)$/);
+  return match ? `${match[1].trim()} ${match[2].trim()}` : title;
+}
+
+interface GroupedTaskListProps {
+  tasks: any[];
+  profiles: any[];
+  inputClass: string;
+  onUpdateDate: (taskId: string, field: 'due_date' | 'capture_date', value: string) => void;
+}
+
+function GroupedTaskList({ tasks, profiles, inputClass, onUpdateDate }: GroupedTaskListProps) {
+  const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
+
+  // Group tasks by service base key
+  const groups: { key: string; tasks: any[] }[] = [];
+  const groupMap = new Map<string, any[]>();
+
+  tasks.forEach((task: any) => {
+    const key = getServiceBaseKey(task.title);
+    if (!groupMap.has(key)) {
+      groupMap.set(key, []);
+      groups.push({ key, tasks: groupMap.get(key)! });
+    }
+    groupMap.get(key)!.push(task);
+  });
+
+  const toggleGroup = (key: string) => {
+    setExpandedGroups(prev => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key); else next.add(key);
+      return next;
+    });
+  };
+
+  const renderSingleTask = (task: any) => {
+    const assignee = profiles.find((p: any) => p.user_id === task.assigned_to);
+    const isVideoTask = task.title?.toLowerCase().includes('vídeo') || task.title?.toLowerCase().includes('video');
+    return (
+      <div key={task.id} className={`rounded-xl border border-white/10 bg-white/[0.02] p-4 ${task.status === 'done' ? 'opacity-50' : ''}`}>
+        <div className="flex items-start gap-3">
+          {task.status === 'done' ? <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" /> : <Clock className="w-4 h-4 text-yellow-400 shrink-0 mt-0.5" />}
+          <div className="flex-1 min-w-0">
+            <p className={`text-sm text-white ${task.status === 'done' ? 'line-through' : ''}`}>{task.title}</p>
+            <div className="flex flex-wrap items-center gap-2 mt-1.5">
+              <span className={`text-[9px] font-mono px-1.5 py-0.5 rounded border ${task.priority === 'high' ? 'border-red-500/30 text-red-400 bg-red-500/10' : task.priority === 'medium' ? 'border-orange-500/30 text-orange-400 bg-orange-500/10' : 'border-white/10 text-white/30'}`}>
+                {task.priority === 'high' ? 'ALTA' : task.priority === 'medium' ? 'MÉDIA' : 'BAIXA'}
+              </span>
+              {assignee && <span className="text-[10px] font-mono text-white/25">👤 {assignee.full_name}</span>}
+              {task.price != null && Number(task.price) > 0 && <span className="text-[10px] font-mono text-emerald-400/60">R$ {Number(task.price).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>}
+            </div>
+          </div>
+        </div>
+        <div className={`grid gap-2 mt-3 ml-7 ${isVideoTask ? 'grid-cols-2' : 'grid-cols-1 max-w-[200px]'}`}>
+          <div>
+            <label className="text-[9px] font-mono text-white/25 uppercase mb-1 flex items-center gap-1">
+              <CalendarDays className="w-3 h-3" /> Data de Entrega
+            </label>
+            <input
+              type="date"
+              value={task.due_date ? new Date(task.due_date).toISOString().split('T')[0] : ''}
+              onChange={e => onUpdateDate(task.id, 'due_date', e.target.value)}
+              className={`w-full ${inputClass}`}
+            />
+          </div>
+          {isVideoTask && (
+            <div>
+              <label className="text-[9px] font-mono text-white/25 uppercase mb-1 flex items-center gap-1">
+                <Video className="w-3 h-3" /> Data de Gravação
+              </label>
+              <input
+                type="date"
+                value={task.capture_date ? new Date(task.capture_date).toISOString().split('T')[0] : ''}
+                onChange={e => onUpdateDate(task.id, 'capture_date', e.target.value)}
+                className={`w-full ${inputClass}`}
+              />
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  };
+
+  return (
+    <div className="space-y-2">
+      {groups.map(group => {
+        if (group.tasks.length === 1) {
+          return renderSingleTask(group.tasks[0]);
+        }
+
+        const isExpanded = expandedGroups.has(group.key);
+        const doneCount = group.tasks.filter((t: any) => t.status === 'done').length;
+        const totalCount = group.tasks.length;
+        const totalPrice = group.tasks.reduce((sum: number, t: any) => sum + (Number(t.price) || 0), 0);
+        const assignee = profiles.find((p: any) => p.user_id === group.tasks[0].assigned_to);
+
+        return (
+          <div key={group.key} className="rounded-xl border border-white/10 bg-white/[0.02] overflow-hidden">
+            <button
+              onClick={() => toggleGroup(group.key)}
+              className="w-full flex items-center gap-3 p-4 text-left hover:bg-white/[0.02] transition-colors"
+            >
+              {isExpanded ? <ChevronDown className="w-3.5 h-3.5 text-white/30 shrink-0" /> : <ChevronRight className="w-3.5 h-3.5 text-white/30 shrink-0" />}
+              <Layers className="w-4 h-4 text-brand-orange shrink-0" />
+              <div className="flex-1 min-w-0">
+                <p className="text-sm text-white truncate">{group.key}</p>
+                <div className="flex flex-wrap items-center gap-2 mt-1">
+                  <span className="text-[10px] font-mono text-white/30">{totalCount} tarefa{totalCount !== 1 ? 's' : ''}</span>
+                  <span className="text-[10px] font-mono text-emerald-400/50">{doneCount} concluída{doneCount !== 1 ? 's' : ''}</span>
+                  {assignee && <span className="text-[10px] font-mono text-white/25">👤 {assignee.full_name}</span>}
+                  {totalPrice > 0 && <span className="text-[10px] font-mono text-emerald-400/60">R$ {totalPrice.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>}
+                </div>
+              </div>
+              <div className="flex items-center gap-2 shrink-0">
+                <div className="w-12 h-1.5 bg-white/5 rounded-full overflow-hidden">
+                  <div className="h-full bg-brand-orange rounded-full transition-all" style={{ width: `${(doneCount / totalCount) * 100}%` }} />
+                </div>
+                <span className="text-[10px] font-mono text-white/30">{doneCount}/{totalCount}</span>
+              </div>
+            </button>
+            {isExpanded && (
+              <div className="border-t border-white/5 p-3 space-y-2">
+                {group.tasks.map((task: any) => renderSingleTask(task))}
+              </div>
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const [expandedClient, setExpandedClient] = useState<string | null>(null);
