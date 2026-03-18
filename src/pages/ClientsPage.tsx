@@ -432,7 +432,7 @@ export default function ClientsPage() {
         valid.map(s => ({
           client_id: clientId,
           service_name: s.service_name.trim(),
-          responsible_id: s.responsible_id || null,
+          responsible_id: s.responsible_id || SERVICE_DEFAULT_RESPONSIBLE[s.service_name.trim()] || null,
           price: s.price ? parseFloat(s.price) : 0,
           quantity_per_month: s.quantity_per_month ? parseInt(s.quantity_per_month) : null,
         }))
