@@ -231,6 +231,20 @@ export default function ClientsPage() {
         }))
       );
       if (error) throw error;
+
+      // Automatically create tasks for responsible users
+      const taskInserts = valid.map(s => ({
+        title: `${s.service_name.trim()} — ${clientName}`,
+        client_name: clientName,
+        assigned_to: s.responsible_id || user!.id,
+        created_by: user!.id,
+        due_date: s.due_date || null,
+        capture_date: s.capture_date || null,
+        price: s.price ? parseFloat(s.price) : null,
+        status: 'todo' as const,
+        priority: 'medium' as const,
+      }));
+      await supabase.from('tasks').insert(taskInserts);
     },
     onSuccess: () => {
       invalidateAll();
