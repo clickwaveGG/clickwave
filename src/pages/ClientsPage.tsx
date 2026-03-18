@@ -43,13 +43,10 @@ interface ServiceRow {
   responsible_id: string;
   price: string;
   quantity_per_month: string;
-  due_date: string;
-  capture_date: string;
 }
 
 const emptyService = (): ServiceRow => ({
   service_name: '', responsible_id: '', price: '', quantity_per_month: '',
-  due_date: '', capture_date: '',
 });
 
 export default function ClientsPage() {
