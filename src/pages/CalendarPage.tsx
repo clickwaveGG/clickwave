@@ -46,12 +46,25 @@ const PRIORITY_COLORS: Record<string, string> = {
 
 export default function CalendarPage() {
   const { user, role } = useAuth();
+  const qc = useQueryClient();
   const isAdmin = role === 'admin';
   const now = new Date();
   const [year, setYear] = useState(now.getFullYear());
   const [month, setMonth] = useState(now.getMonth());
   const [selectedMiniDay, setSelectedMiniDay] = useState<number | null>(null);
   const [selectedMainDay, setSelectedMainDay] = useState<number | null>(null);
+
+  const toggleTaskStatus = async (taskId: string, currentStatus: string) => {
+    const newStatus = currentStatus === 'done' ? 'todo' : 'done';
+    const { error } = await supabase.from('tasks').update({ status: newStatus }).eq('id', taskId);
+    if (error) {
+      toast.error('Erro ao atualizar status');
+    } else {
+      toast.success(newStatus === 'done' ? 'Marcada como concluída' : 'Reaberta');
+      qc.invalidateQueries({ queryKey: ['calendar-tasks'] });
+      qc.invalidateQueries({ queryKey: ['my-tasks'] });
+    }
+  };
 
   const { data: allTasks = [] } = useQuery({
     queryKey: ['calendar-tasks', user?.id, isAdmin],
