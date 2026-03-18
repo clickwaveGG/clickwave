@@ -15,6 +15,7 @@ type Task = {
   client_name: string | null;
   description: string | null;
   weekday: number | null;
+  created_at: string;
 };
 
 type Profile = {
@@ -117,16 +118,21 @@ export default function CalendarPage() {
         if (!map[dateKey]) map[dateKey] = [];
         map[dateKey].push(t);
       }
-      // Tasks with weekday (recurring traffic) — inject into every matching weekday of the month
-      if (t.weekday != null && t.status !== 'done') {
-        for (let d = 1; d <= daysInMonth; d++) {
-          const date = new Date(year, month, d);
-          if (jsWeekdayToOurs(date.getDay()) === t.weekday) {
-            const dateKey = `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
-            if (!map[dateKey]) map[dateKey] = [];
-            // Avoid duplicates if task also has due_date on same day
-            if (!map[dateKey].some(existing => existing.id === t.id)) {
-              map[dateKey].push(t);
+      // Tasks with weekday (recurring traffic) — inject into every matching weekday of the current month
+      // Show in all months from task creation date onwards, regardless of status
+      if (t.weekday != null) {
+        const createdDate = new Date(t.created_at || '2000-01-01');
+        const monthStart = new Date(year, month, 1);
+        // Only show from the month the task was created onwards
+        if (monthStart >= new Date(createdDate.getFullYear(), createdDate.getMonth(), 1)) {
+          for (let d = 1; d <= daysInMonth; d++) {
+            const date = new Date(year, month, d);
+            if (jsWeekdayToOurs(date.getDay()) === t.weekday) {
+              const dateKey = `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+              if (!map[dateKey]) map[dateKey] = [];
+              if (!map[dateKey].some(existing => existing.id === t.id)) {
+                map[dateKey].push(t);
+              }
             }
           }
         }
