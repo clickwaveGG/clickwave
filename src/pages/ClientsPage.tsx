@@ -362,6 +362,8 @@ export default function ClientsPage() {
     queryClient.invalidateQueries({ queryKey: ['client-services'] });
     queryClient.invalidateQueries({ queryKey: ['all-client-tasks'] });
     queryClient.invalidateQueries({ queryKey: ['my-tasks'] });
+    queryClient.invalidateQueries({ queryKey: ['calendar-tasks'] });
+    queryClient.invalidateQueries({ queryKey: ['recurring-completions'] });
   };
 
   const createClientMutation = useMutation({
