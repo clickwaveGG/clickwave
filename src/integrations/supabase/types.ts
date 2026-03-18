@@ -40,8 +40,10 @@ export type Database = {
       }
       client_services: {
         Row: {
+          capture_date: string | null
           client_id: string
           created_at: string
+          due_date: string | null
           id: string
           price: number | null
           quantity_per_month: number | null
@@ -49,8 +51,10 @@ export type Database = {
           service_name: string
         }
         Insert: {
+          capture_date?: string | null
           client_id: string
           created_at?: string
+          due_date?: string | null
           id?: string
           price?: number | null
           quantity_per_month?: number | null
@@ -58,8 +62,10 @@ export type Database = {
           service_name: string
         }
         Update: {
+          capture_date?: string | null
           client_id?: string
           created_at?: string
+          due_date?: string | null
           id?: string
           price?: number | null
           quantity_per_month?: number | null

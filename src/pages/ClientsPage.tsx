@@ -43,10 +43,13 @@ interface ServiceRow {
   responsible_id: string;
   price: string;
   quantity_per_month: string;
+  due_date: string;
+  capture_date: string;
 }
 
 const emptyService = (): ServiceRow => ({
   service_name: '', responsible_id: '', price: '', quantity_per_month: '',
+  due_date: '', capture_date: '',
 });
 
 export default function ClientsPage() {
@@ -55,6 +58,8 @@ export default function ClientsPage() {
   const [expandedClient, setExpandedClient] = useState<string | null>(null);
   const [showNewClient, setShowNewClient] = useState(false);
   const [showNewTask, setShowNewTask] = useState<string | null>(null);
+  const [showAddService, setShowAddService] = useState<string | null>(null);
+  const [addServiceRows, setAddServiceRows] = useState<ServiceRow[]>([emptyService()]);
   const [deleteClientId, setDeleteClientId] = useState<string | null>(null);
   const [taskRows, setTaskRows] = useState<NewTaskRow[]>([emptyTask()]);
 
@@ -136,6 +141,8 @@ export default function ClientsPage() {
             responsible_id: s.responsible_id || null,
             price: s.price ? parseFloat(s.price) : 0,
             quantity_per_month: s.quantity_per_month ? parseInt(s.quantity_per_month) : null,
+            due_date: s.due_date || null,
+            capture_date: s.capture_date || null,
           }))
         );
         if (sErr) throw sErr;
@@ -148,6 +155,9 @@ export default function ClientsPage() {
           client_name: newClient.name.trim(),
           assigned_to: s.responsible_id || user!.id,
           created_by: user!.id,
+          due_date: s.due_date || null,
+          capture_date: s.capture_date || null,
+          price: s.price ? parseFloat(s.price) : null,
           status: 'todo' as const,
           priority: 'medium' as const,
         }));
@@ -205,12 +215,42 @@ export default function ClientsPage() {
     onError: () => toast.error('Erro ao remover cliente'),
   });
 
+  const addServicesMutation = useMutation({
+    mutationFn: async ({ clientId, clientName, services }: { clientId: string; clientName: string; services: ServiceRow[] }) => {
+      const valid = services.filter(s => s.service_name.trim());
+      if (valid.length === 0) throw new Error('Adicione ao menos um serviço');
+      const { error } = await supabase.from('client_services').insert(
+        valid.map(s => ({
+          client_id: clientId,
+          service_name: s.service_name.trim(),
+          responsible_id: s.responsible_id || null,
+          price: s.price ? parseFloat(s.price) : 0,
+          quantity_per_month: s.quantity_per_month ? parseInt(s.quantity_per_month) : null,
+          due_date: s.due_date || null,
+          capture_date: s.capture_date || null,
+        }))
+      );
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      invalidateAll();
+      setAddServiceRows([emptyService()]);
+      setShowAddService(null);
+      toast.success('Serviços adicionados!');
+    },
+    onError: (e: any) => toast.error(e.message || 'Erro ao adicionar serviços'),
+  });
+
   const updateTaskRow = (i: number, field: keyof NewTaskRow, value: string) => {
     setTaskRows(prev => prev.map((r, idx) => (idx === i ? { ...r, [field]: value } : r)));
   };
 
   const updateService = (i: number, field: keyof ServiceRow, value: string) => {
     setNewServices(prev => prev.map((r, idx) => (idx === i ? { ...r, [field]: value } : r)));
+  };
+
+  const updateAddServiceRow = (i: number, field: keyof ServiceRow, value: string) => {
+    setAddServiceRows(prev => prev.map((r, idx) => (idx === i ? { ...r, [field]: value } : r)));
   };
 
   const getTasksForClient = (clientName: string) =>
@@ -288,37 +328,104 @@ export default function ClientsPage() {
             )}
 
             {/* Contracted Services */}
-            {services.length > 0 && (
-              <div>
-                <div className="flex items-center gap-2 mb-3">
+            <div>
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-2">
                   <Package className="w-4 h-4 text-brand-orange" />
                   <span className="text-sm font-mono text-white/50 uppercase tracking-wider">Serviços Contratados</span>
                 </div>
+                <button
+                  onClick={() => { setShowAddService(showAddService === client.id ? null : client.id); setAddServiceRows([emptyService()]); }}
+                  className="flex items-center gap-1.5 text-xs text-brand-orange hover:text-brand-orange/80 transition-colors"
+                >
+                  <Plus className="w-3.5 h-3.5" /> Adicionar serviços
+                </button>
+              </div>
+
+              {/* Add services form for existing client */}
+              {showAddService === client.id && (
+                <div className="rounded-xl border border-brand-orange/20 bg-white/[0.02] p-4 space-y-3 mb-3">
+                  {addServiceRows.map((s, idx) => (
+                    <div key={idx} className="rounded-lg border border-white/5 bg-white/[0.02] p-3">
+                      <div className="flex items-center gap-2 mb-2">
+                        <span className="text-[10px] font-mono text-brand-orange/60 w-5 text-center shrink-0">{idx + 1}</span>
+                        <select value={s.service_name} onChange={e => updateAddServiceRow(idx, 'service_name', e.target.value)} className={`flex-1 ${inputClass}`}>
+                          <option value="">Selecionar serviço...</option>
+                          {SERVICE_PRESETS.map(sp => <option key={sp} value={sp}>{sp}</option>)}
+                        </select>
+                        <button onClick={() => setAddServiceRows(prev => prev.length === 1 ? [emptyService()] : prev.filter((_, i) => i !== idx))} className="text-white/15 hover:text-red-400 shrink-0"><Trash2 className="w-3.5 h-3.5" /></button>
+                      </div>
+                      <div className="grid grid-cols-2 md:grid-cols-6 gap-2">
+                        <div>
+                          <label className="text-[9px] font-mono text-white/25 uppercase mb-1 block">Responsável</label>
+                          <select value={s.responsible_id} onChange={e => updateAddServiceRow(idx, 'responsible_id', e.target.value)} className={`w-full ${inputClass}`}>
+                            <option value="">Selecionar...</option>
+                            {profiles.map((p: any) => <option key={p.user_id} value={p.user_id}>{p.full_name}</option>)}
+                          </select>
+                        </div>
+                        <div>
+                          <label className="text-[9px] font-mono text-white/25 uppercase mb-1 flex items-center gap-1"><DollarSign className="w-3 h-3" /> Valor</label>
+                          <input type="number" step="0.01" min="0" value={s.price} onChange={e => updateAddServiceRow(idx, 'price', e.target.value)} placeholder="0,00" className={`w-full ${inputClass}`} />
+                        </div>
+                        <div>
+                          <label className="text-[9px] font-mono text-white/25 uppercase mb-1 block">Qtd/mês</label>
+                          <input type="number" min="0" value={s.quantity_per_month} onChange={e => updateAddServiceRow(idx, 'quantity_per_month', e.target.value)} placeholder="—" className={`w-full ${inputClass}`} />
+                        </div>
+                        <div>
+                          <label className="text-[9px] font-mono text-white/25 uppercase mb-1 flex items-center gap-1"><CalendarDays className="w-3 h-3" /> Entrega</label>
+                          <input type="date" value={s.due_date} onChange={e => updateAddServiceRow(idx, 'due_date', e.target.value)} className={`w-full ${inputClass}`} />
+                        </div>
+                        <div>
+                          <label className="text-[9px] font-mono text-white/25 uppercase mb-1 flex items-center gap-1"><Video className="w-3 h-3" /> Captação</label>
+                          <input type="date" value={s.capture_date} onChange={e => updateAddServiceRow(idx, 'capture_date', e.target.value)} className={`w-full ${inputClass}`} />
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                  <div className="flex items-center justify-between">
+                    <button onClick={() => setAddServiceRows(prev => [...prev, emptyService()])} className="flex items-center gap-1.5 text-xs text-white/30 hover:text-white/60"><Plus className="w-3.5 h-3.5" /> Mais um serviço</button>
+                    <button
+                      onClick={() => addServicesMutation.mutate({ clientId: client.id, clientName: client.name, services: addServiceRows })}
+                      className="px-4 py-1.5 rounded-lg bg-brand-orange text-white text-xs font-medium hover:bg-brand-orange/90 transition-colors"
+                    >
+                      Salvar {addServiceRows.filter(r => r.service_name.trim()).length} serviço{addServiceRows.filter(r => r.service_name.trim()).length !== 1 ? 's' : ''}
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {services.length > 0 ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
                   {services.map((s: any) => {
                     const resp = profiles.find((p: any) => p.user_id === s.responsible_id);
                     return (
-                      <div key={s.id} className="rounded-xl border border-white/10 bg-white/[0.02] p-3 flex items-center gap-3">
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm text-white truncate">{s.service_name}</p>
-                          <div className="flex items-center gap-3 mt-1">
-                            {resp && <span className="text-[10px] font-mono text-white/30">👤 {resp.full_name}</span>}
-                            {s.quantity_per_month && (
-                              <span className="text-[10px] font-mono text-white/25">{s.quantity_per_month}/mês</span>
-                            )}
+                      <div key={s.id} className="rounded-xl border border-white/10 bg-white/[0.02] p-3">
+                        <div className="flex items-center gap-3">
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm text-white truncate">{s.service_name}</p>
+                            <div className="flex flex-wrap items-center gap-2 mt-1.5">
+                              {resp && <span className="text-[10px] font-mono text-white/30">👤 {resp.full_name}</span>}
+                              {s.quantity_per_month && (
+                                <span className="text-[10px] font-mono text-white/25">{s.quantity_per_month}/mês</span>
+                              )}
+                              {s.due_date && <span className="text-[10px] font-mono text-white/20">📅 {new Date(s.due_date).toLocaleDateString('pt-BR')}</span>}
+                              {s.capture_date && <span className="text-[10px] font-mono text-purple-400/60">🎬 {new Date(s.capture_date).toLocaleDateString('pt-BR')}</span>}
+                            </div>
                           </div>
+                          {Number(s.price) > 0 && (
+                            <span className="text-xs font-mono text-emerald-400/70 shrink-0">
+                              R$ {Number(s.price).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                            </span>
+                          )}
                         </div>
-                        {Number(s.price) > 0 && (
-                          <span className="text-xs font-mono text-emerald-400/70 shrink-0">
-                            R$ {Number(s.price).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                          </span>
-                        )}
                       </div>
                     );
                   })}
                 </div>
-              </div>
-            )}
+              ) : (
+                <p className="text-white/15 text-xs font-mono text-center py-2">Nenhum serviço cadastrado</p>
+              )}
+            </div>
 
             {/* Tasks */}
             <div>
@@ -470,14 +577,15 @@ export default function ClientsPage() {
             <div className="space-y-3">
               {newServices.map((s, idx) => (
                 <div key={idx} className="rounded-lg border border-white/5 bg-white/[0.02] p-3">
-                  <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
-                    <div className="col-span-2 md:col-span-1">
-                      <label className="text-[9px] font-mono text-white/25 uppercase mb-1 block">Serviço</label>
-                      <select value={s.service_name} onChange={e => updateService(idx, 'service_name', e.target.value)} className={`w-full ${inputClass}`}>
-                        <option value="">Selecionar...</option>
-                        {SERVICE_PRESETS.map(sp => <option key={sp} value={sp}>{sp}</option>)}
-                      </select>
-                    </div>
+                  <div className="flex items-center gap-2 mb-2">
+                    <span className="text-[10px] font-mono text-brand-orange/60 w-5 text-center shrink-0">{idx + 1}</span>
+                    <select value={s.service_name} onChange={e => updateService(idx, 'service_name', e.target.value)} className={`flex-1 ${inputClass}`}>
+                      <option value="">Selecionar serviço...</option>
+                      {SERVICE_PRESETS.map(sp => <option key={sp} value={sp}>{sp}</option>)}
+                    </select>
+                    <button onClick={() => setNewServices(prev => prev.length === 1 ? [emptyService()] : prev.filter((_, i) => i !== idx))} className="text-white/15 hover:text-red-400 shrink-0"><Trash2 className="w-3.5 h-3.5" /></button>
+                  </div>
+                  <div className="grid grid-cols-2 md:grid-cols-6 gap-2">
                     <div>
                       <label className="text-[9px] font-mono text-white/25 uppercase mb-1 block">Responsável</label>
                       <select value={s.responsible_id} onChange={e => updateService(idx, 'responsible_id', e.target.value)} className={`w-full ${inputClass}`}>
@@ -486,15 +594,20 @@ export default function ClientsPage() {
                       </select>
                     </div>
                     <div>
-                      <label className="text-[9px] font-mono text-white/25 uppercase mb-1 block">Valor (R$)</label>
+                      <label className="text-[9px] font-mono text-white/25 uppercase mb-1 flex items-center gap-1"><DollarSign className="w-3 h-3" /> Valor</label>
                       <input type="number" step="0.01" min="0" value={s.price} onChange={e => updateService(idx, 'price', e.target.value)} placeholder="0,00" className={`w-full ${inputClass}`} />
                     </div>
                     <div>
                       <label className="text-[9px] font-mono text-white/25 uppercase mb-1 block">Qtd/mês</label>
-                      <div className="flex items-center gap-1">
-                        <input type="number" min="0" value={s.quantity_per_month} onChange={e => updateService(idx, 'quantity_per_month', e.target.value)} placeholder="—" className={`w-full ${inputClass}`} />
-                        <button onClick={() => setNewServices(prev => prev.length === 1 ? [emptyService()] : prev.filter((_, i) => i !== idx))} className="text-white/15 hover:text-red-400 shrink-0"><Trash2 className="w-3.5 h-3.5" /></button>
-                      </div>
+                      <input type="number" min="0" value={s.quantity_per_month} onChange={e => updateService(idx, 'quantity_per_month', e.target.value)} placeholder="—" className={`w-full ${inputClass}`} />
+                    </div>
+                    <div>
+                      <label className="text-[9px] font-mono text-white/25 uppercase mb-1 flex items-center gap-1"><CalendarDays className="w-3 h-3" /> Entrega</label>
+                      <input type="date" value={s.due_date} onChange={e => updateService(idx, 'due_date', e.target.value)} className={`w-full ${inputClass}`} />
+                    </div>
+                    <div>
+                      <label className="text-[9px] font-mono text-white/25 uppercase mb-1 flex items-center gap-1"><Video className="w-3 h-3" /> Captação</label>
+                      <input type="date" value={s.capture_date} onChange={e => updateService(idx, 'capture_date', e.target.value)} className={`w-full ${inputClass}`} />
                     </div>
                   </div>
                 </div>
