@@ -426,7 +426,6 @@ export default function ClientsPage() {
                 <p className="text-white/15 text-xs font-mono text-center py-2">Nenhum serviço cadastrado</p>
               )}
             </div>
-            )}
 
             {/* Tasks */}
             <div>
