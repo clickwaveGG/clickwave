@@ -5,7 +5,7 @@ import { AnimatePresence, MotionConfig, motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 
 const TRANSITION = {
-  type: "spring",
+  type: "spring" as const,
   bounce: 0.1,
   duration: 0.4,
 };
