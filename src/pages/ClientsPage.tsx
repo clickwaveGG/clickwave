@@ -303,6 +303,8 @@ export default function ClientsPage() {
   const [taskRows, setTaskRows] = useState<NewTaskRow[]>([emptyTask()]);
   const [editingClient, setEditingClient] = useState<string | null>(null);
   const [editForm, setEditForm] = useState({ name: '', size: 'small', is_recurring: false, notes: '', contact_info: '' });
+  const [addTaskForService, setAddTaskForService] = useState<string | null>(null);
+  const [serviceTaskRows, setServiceTaskRows] = useState<{ title: string; due_date: string; capture_date: string }[]>([{ title: '', due_date: '', capture_date: '' }]);
 
   // New client form
   const [newClient, setNewClient] = useState({
@@ -803,8 +805,11 @@ export default function ClientsPage() {
 
               {services.length > 0 ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                  {services.map((s: any) => {
+                   {services.map((s: any) => {
                     const resp = profiles.find((p: any) => p.user_id === s.responsible_id);
+                    const isVideoSvc = s.service_name?.toLowerCase().includes('vídeo') || s.service_name?.toLowerCase().includes('video');
+                    const isTrafficSvc = isTrafficTask(s.service_name || '');
+                    const showingForm = addTaskForService === s.id;
                     return (
                       <div key={s.id} className="group/svc rounded-xl border border-white/10 bg-white/[0.02] p-3">
                         <div className="flex items-center gap-3">
@@ -827,6 +832,20 @@ export default function ClientsPage() {
                               </span>
                             )}
                             <button
+                              onClick={() => {
+                                if (showingForm) {
+                                  setAddTaskForService(null);
+                                } else {
+                                  setAddTaskForService(s.id);
+                                  setServiceTaskRows([{ title: '', due_date: '', capture_date: '' }]);
+                                }
+                              }}
+                              className="text-white/20 hover:text-brand-orange transition-colors opacity-0 group-hover/svc:opacity-100"
+                              title="Adicionar tarefa para este serviço"
+                            >
+                              <Plus className="w-3.5 h-3.5" />
+                            </button>
+                            <button
                               onClick={() => deleteServiceMutation.mutate(s.id)}
                               className="text-white/15 hover:text-red-400 transition-colors opacity-0 group-hover/svc:opacity-100"
                               title="Remover serviço"
@@ -835,6 +854,64 @@ export default function ClientsPage() {
                             </button>
                           </div>
                         </div>
+                        {/* Inline task creation form for this service */}
+                        {showingForm && (
+                          <div className="mt-3 pt-3 border-t border-white/5 space-y-2">
+                            {serviceTaskRows.map((row, idx) => (
+                              <div key={idx} className="flex flex-wrap items-end gap-2">
+                                <div className="flex-1 min-w-[140px]">
+                                  <label className="text-[9px] font-mono text-white/25 uppercase mb-1 block">Título</label>
+                                  <input
+                                    value={row.title}
+                                    onChange={e => setServiceTaskRows(prev => prev.map((r, i) => i === idx ? { ...r, title: e.target.value } : r))}
+                                    placeholder={`${s.service_name} — ${client.name}`}
+                                    className={`w-full ${inputClass}`}
+                                  />
+                                </div>
+                                {!isTrafficSvc && (
+                                  <div className="w-[140px]">
+                                    <label className="text-[9px] font-mono text-white/25 uppercase mb-1 flex items-center gap-1"><CalendarDays className="w-3 h-3" /> Entrega</label>
+                                    <input type="date" value={row.due_date} onChange={e => setServiceTaskRows(prev => prev.map((r, i) => i === idx ? { ...r, due_date: e.target.value } : r))} className={`w-full ${inputClass}`} />
+                                  </div>
+                                )}
+                                {isVideoSvc && (
+                                  <div className="w-[140px]">
+                                    <label className="text-[9px] font-mono text-white/25 uppercase mb-1 flex items-center gap-1"><Video className="w-3 h-3" /> Captação</label>
+                                    <input type="date" value={row.capture_date} onChange={e => setServiceTaskRows(prev => prev.map((r, i) => i === idx ? { ...r, capture_date: e.target.value } : r))} className={`w-full ${inputClass}`} />
+                                  </div>
+                                )}
+                                <button onClick={() => setServiceTaskRows(prev => prev.length === 1 ? [{ title: '', due_date: '', capture_date: '' }] : prev.filter((_, i) => i !== idx))} className="text-white/15 hover:text-red-400 pb-2"><Trash2 className="w-3.5 h-3.5" /></button>
+                              </div>
+                            ))}
+                            <div className="flex items-center justify-between pt-1">
+                              <button onClick={() => setServiceTaskRows(prev => [...prev, { title: '', due_date: '', capture_date: '' }])} className="flex items-center gap-1 text-[10px] text-white/30 hover:text-white/60"><Plus className="w-3 h-3" /> Mais</button>
+                              <button
+                                onClick={async () => {
+                                  const validRows = serviceTaskRows.filter(r => r.title.trim());
+                                  if (validRows.length === 0) { toast.error('Preencha ao menos um título'); return; }
+                                  const inserts = validRows.map(r => ({
+                                    title: r.title.trim(),
+                                    client_name: client.name,
+                                    assigned_to: s.responsible_id || user!.id,
+                                    created_by: user!.id,
+                                    due_date: r.due_date || null,
+                                    capture_date: r.capture_date || null,
+                                    status: 'todo' as const,
+                                    priority: 'medium' as const,
+                                  }));
+                                  const { error } = await supabase.from('tasks').insert(inserts);
+                                  if (error) { toast.error('Erro ao criar tarefas'); return; }
+                                  toast.success(`${validRows.length} tarefa${validRows.length > 1 ? 's' : ''} criada${validRows.length > 1 ? 's' : ''}!`);
+                                  setAddTaskForService(null);
+                                  invalidateAll();
+                                }}
+                                className="text-[10px] font-mono px-3 py-1.5 rounded-lg bg-brand-orange text-brand-black font-medium hover:bg-brand-orange/90 transition-colors"
+                              >
+                                Criar
+                              </button>
+                            </div>
+                          </div>
+                        )}
                       </div>
                     );
                   })}
