@@ -811,10 +811,10 @@ export default function ClientsPage() {
                     const isTrafficSvc = isTrafficTask(s.service_name || '');
                     const showingForm = addTaskForService === s.id;
                     return (
-                      <div key={s.id} className="group/svc rounded-xl border border-white/10 bg-white/[0.02] p-3">
+                      <div key={s.id} className={`group/svc rounded-xl border p-3 ${s.completed ? 'border-emerald-500/20 bg-emerald-500/5 opacity-60' : 'border-white/10 bg-white/[0.02]'}`}>
                         <div className="flex items-center gap-3">
                           <div className="flex-1 min-w-0">
-                            <p className="text-sm text-white truncate">{s.service_name}</p>
+                            <p className={`text-sm truncate ${s.completed ? 'text-white/40 line-through' : 'text-white'}`}>{s.service_name}</p>
                             <div className="flex flex-wrap items-center gap-2 mt-1.5">
                               {resp && <span className="text-[10px] font-mono text-white/30">👤 {resp.full_name}</span>}
                               {s.quantity_per_month && (

@@ -178,7 +178,7 @@ export default function AdminPanel() {
             totalPayments={totalPayments}
             memberPayments={memberPayments}
           />
-          <AdminServiceProfitTable services={allServices as any} />
+          <AdminServiceProfitTable services={activeServices as any} />
         </div>
       )}
 
