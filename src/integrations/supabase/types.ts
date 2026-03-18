@@ -249,6 +249,30 @@ export type Database = {
         }
         Relationships: []
       }
+      recurring_task_completions: {
+        Row: {
+          completed_by: string
+          completion_date: string
+          created_at: string
+          id: string
+          task_id: string
+        }
+        Insert: {
+          completed_by: string
+          completion_date: string
+          created_at?: string
+          id?: string
+          task_id: string
+        }
+        Update: {
+          completed_by?: string
+          completion_date?: string
+          created_at?: string
+          id?: string
+          task_id?: string
+        }
+        Relationships: []
+      }
       tasks: {
         Row: {
           assigned_to: string | null
