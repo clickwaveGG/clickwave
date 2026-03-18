@@ -564,7 +564,7 @@ export default function ClientsPage() {
             </div>
             <p className="text-white/30 text-xs font-mono mt-0.5">
               {services.length} serviço{services.length !== 1 ? 's' : ''} · {totalTasks} tarefa{totalTasks !== 1 ? 's' : ''}
-              {totalServiceValue > 0 && ` · R$ ${totalServiceValue.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`}
+              {isAdmin && totalServiceValue > 0 && ` · R$ ${totalServiceValue.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`}
             </p>
           </div>
           <span className={`text-[9px] font-mono px-2 py-0.5 rounded border shrink-0 ${sizeConf.color}`}>
