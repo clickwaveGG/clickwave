@@ -224,7 +224,7 @@ function GroupedTaskList({ tasks, profiles, inputClass, isAdmin, onUpdateDate, o
                   <span className="text-[10px] font-mono text-white/30">{totalCount} tarefa{totalCount !== 1 ? 's' : ''}</span>
                   <span className="text-[10px] font-mono text-emerald-400/50">{doneCount} concluída{doneCount !== 1 ? 's' : ''}</span>
                   {assignee && <span className="text-[10px] font-mono text-white/25">👤 {assignee.full_name}</span>}
-                  {totalPrice > 0 && <span className="text-[10px] font-mono text-emerald-400/60">R$ {totalPrice.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>}
+                  {isAdmin && totalPrice > 0 && <span className="text-[10px] font-mono text-emerald-400/60">R$ {totalPrice.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>}
                 </div>
               </div>
               <div className="flex items-center gap-2 shrink-0">
