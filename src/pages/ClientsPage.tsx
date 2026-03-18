@@ -537,56 +537,12 @@ export default function ClientsPage() {
               {clientTasks.length === 0 ? (
                 <p className="text-white/15 text-xs font-mono text-center py-4">Nenhuma demanda</p>
               ) : (
-                <div className="space-y-2">
-                  {clientTasks.map((task: any) => {
-                    const assignee = profiles.find((p: any) => p.user_id === task.assigned_to);
-                    const isVideoTask = task.title?.toLowerCase().includes('vídeo') || task.title?.toLowerCase().includes('video');
-                    return (
-                      <div key={task.id} className={`rounded-xl border border-white/10 bg-white/[0.02] p-4 ${task.status === 'done' ? 'opacity-50' : ''}`}>
-                        <div className="flex items-start gap-3">
-                          {task.status === 'done' ? <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" /> : <Clock className="w-4 h-4 text-yellow-400 shrink-0 mt-0.5" />}
-                          <div className="flex-1 min-w-0">
-                            <p className={`text-sm text-white ${task.status === 'done' ? 'line-through' : ''}`}>{task.title}</p>
-                            <div className="flex flex-wrap items-center gap-2 mt-1.5">
-                              <span className={`text-[9px] font-mono px-1.5 py-0.5 rounded border ${task.priority === 'high' ? 'border-red-500/30 text-red-400 bg-red-500/10' : task.priority === 'medium' ? 'border-orange-500/30 text-orange-400 bg-orange-500/10' : 'border-white/10 text-white/30'}`}>
-                                {task.priority === 'high' ? 'ALTA' : task.priority === 'medium' ? 'MÉDIA' : 'BAIXA'}
-                              </span>
-                              {assignee && <span className="text-[10px] font-mono text-white/25">👤 {assignee.full_name}</span>}
-                              {task.price != null && Number(task.price) > 0 && <span className="text-[10px] font-mono text-emerald-400/60">R$ {Number(task.price).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>}
-                            </div>
-                          </div>
-                        </div>
-                        {/* Inline date editing */}
-                        <div className={`grid gap-2 mt-3 ml-7 ${isVideoTask ? 'grid-cols-2' : 'grid-cols-1 max-w-[200px]'}`}>
-                          <div>
-                            <label className="text-[9px] font-mono text-white/25 uppercase mb-1 flex items-center gap-1">
-                              <CalendarDays className="w-3 h-3" /> Data de Entrega
-                            </label>
-                            <input
-                              type="date"
-                              value={task.due_date ? new Date(task.due_date).toISOString().split('T')[0] : ''}
-                              onChange={e => updateTaskDateMutation.mutate({ taskId: task.id, field: 'due_date', value: e.target.value })}
-                              className={`w-full ${inputClass}`}
-                            />
-                          </div>
-                          {isVideoTask && (
-                            <div>
-                              <label className="text-[9px] font-mono text-white/25 uppercase mb-1 flex items-center gap-1">
-                                <Video className="w-3 h-3" /> Data de Gravação
-                              </label>
-                              <input
-                                type="date"
-                                value={task.capture_date ? new Date(task.capture_date).toISOString().split('T')[0] : ''}
-                                onChange={e => updateTaskDateMutation.mutate({ taskId: task.id, field: 'capture_date', value: e.target.value })}
-                                className={`w-full ${inputClass}`}
-                              />
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
+                <GroupedTaskList
+                  tasks={clientTasks}
+                  profiles={profiles}
+                  inputClass={inputClass}
+                  onUpdateDate={(taskId, field, value) => updateTaskDateMutation.mutate({ taskId, field, value })}
+                />
               )}
             </div>
           </div>
