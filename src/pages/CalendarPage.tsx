@@ -467,6 +467,15 @@ export default function CalendarPage() {
                         <span className="text-[9px] text-white/25 font-mono shrink-0">
                           {t.assigned_to ? profileMap[t.assigned_to]?.split(' ')[0] : '?'}
                         </span>
+                        {isAdmin && (
+                          <button
+                            onClick={() => toggleTaskStatus(t.id, t.status)}
+                            className="text-yellow-400 hover:text-yellow-300 transition-colors shrink-0"
+                            title="Reabrir tarefa"
+                          >
+                            <RotateCcw className="w-3 h-3" />
+                          </button>
+                        )}
                       </div>
                     ))}
                   </div>
