@@ -225,9 +225,12 @@ export function KanbanBoard({ tasks }: { tasks: Task[] }) {
                       </div>
                     ))}
                     {hiddenCount > 0 && (
-                      <p className="text-[10px] font-mono text-white/20 text-center pt-1">
+                      <button
+                        onClick={() => navigate(`/dashboard/tasks?status=${col.key}`)}
+                        className="text-[10px] font-mono text-white/20 text-center pt-1 w-full hover:text-brand-orange transition-colors"
+                      >
                         +{hiddenCount} {hiddenCount === 1 ? 'tarefa' : 'tarefas'}
-                      </p>
+                      </button>
                     )}
                   </>
                 )}
