@@ -15,6 +15,7 @@ type Task = {
   client_name: string | null;
   description: string | null;
   weekday: number | null;
+  created_at: string;
 };
 
 type Profile = {
