@@ -496,9 +496,16 @@ export default function ClientsPage() {
                         </div>
                         <div>
                           <label className="text-[9px] font-mono text-white/25 uppercase mb-1 block">Prioridade</label>
-                          <select value={row.priority} onChange={e => updateTaskRow(idx, 'priority', e.target.value)} className={`w-full ${inputClass}`}>
-                            <option value="low">Baixa</option><option value="medium">Média</option><option value="high">Alta</option>
-                          </select>
+                          <FloatingSelect
+                            value={row.priority}
+                            onChange={val => updateTaskRow(idx, 'priority', val)}
+                            options={[
+                              { value: 'low', label: 'Baixa' },
+                              { value: 'medium', label: 'Média' },
+                              { value: 'high', label: 'Alta' },
+                            ]}
+                            placeholder="Prioridade..."
+                          />
                         </div>
                         <div>
                           <label className="text-[9px] font-mono text-white/25 uppercase mb-1 flex items-center gap-1"><CalendarDays className="w-3 h-3" /> Entrega</label>
