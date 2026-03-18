@@ -90,58 +90,7 @@ function GroupedTaskList({ tasks, profiles, inputClass, onUpdateDate, onDeleteTa
   };
 
   const renderSingleTask = (task: any) => {
-    const assignee = profiles.find((p: any) => p.user_id === task.assigned_to);
-    const isVideoTask = task.title?.toLowerCase().includes('vídeo') || task.title?.toLowerCase().includes('video');
-    return (
-      <div key={task.id} className={`group/task rounded-xl border border-white/10 bg-white/[0.02] p-4 ${task.status === 'done' ? 'opacity-50' : ''}`}>
-        <div className="flex items-start gap-3">
-          {task.status === 'done' ? <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" /> : <Clock className="w-4 h-4 text-yellow-400 shrink-0 mt-0.5" />}
-          <div className="flex-1 min-w-0">
-            <p className={`text-sm text-white ${task.status === 'done' ? 'line-through' : ''}`}>{task.title}</p>
-            <div className="flex flex-wrap items-center gap-2 mt-1.5">
-              <span className={`text-[9px] font-mono px-1.5 py-0.5 rounded border ${task.priority === 'high' ? 'border-red-500/30 text-red-400 bg-red-500/10' : task.priority === 'medium' ? 'border-orange-500/30 text-orange-400 bg-orange-500/10' : 'border-white/10 text-white/30'}`}>
-                {task.priority === 'high' ? 'ALTA' : task.priority === 'medium' ? 'MÉDIA' : 'BAIXA'}
-              </span>
-              {assignee && <span className="text-[10px] font-mono text-white/25">👤 {assignee.full_name}</span>}
-              {task.price != null && Number(task.price) > 0 && <span className="text-[10px] font-mono text-emerald-400/60">R$ {Number(task.price).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>}
-            </div>
-          </div>
-          <button
-            onClick={() => onDeleteTask(task.id)}
-            className="text-white/15 hover:text-red-400 transition-colors opacity-0 group-hover/task:opacity-100 shrink-0 mt-0.5"
-            title="Remover tarefa"
-          >
-            <Trash2 className="w-3.5 h-3.5" />
-          </button>
-        </div>
-        <div className={`grid gap-2 mt-3 ml-7 ${isVideoTask ? 'grid-cols-2' : 'grid-cols-1 max-w-[200px]'}`}>
-          <div>
-            <label className="text-[9px] font-mono text-white/25 uppercase mb-1 flex items-center gap-1">
-              <CalendarDays className="w-3 h-3" /> Data de Entrega
-            </label>
-            <input
-              type="date"
-              value={task.due_date ? new Date(task.due_date).toISOString().split('T')[0] : ''}
-              onChange={e => onUpdateDate(task.id, 'due_date', e.target.value)}
-              className={`w-full ${inputClass}`}
-            />
-          </div>
-          {isVideoTask && (
-            <div>
-              <label className="text-[9px] font-mono text-white/25 uppercase mb-1 flex items-center gap-1">
-                <Video className="w-3 h-3" /> Data de Gravação
-              </label>
-              <input
-                type="date"
-                value={task.capture_date ? new Date(task.capture_date).toISOString().split('T')[0] : ''}
-                onChange={e => onUpdateDate(task.id, 'capture_date', e.target.value)}
-                className={`w-full ${inputClass}`}
-              />
-            </div>
-          )}
-        </div>
-      </div>
-    );
+    return <SingleTaskRow key={task.id} task={task} profiles={profiles} inputClass={inputClass} onUpdateDate={onUpdateDate} onDeleteTask={onDeleteTask} />;
   };
 
   return (
