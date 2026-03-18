@@ -51,6 +51,7 @@ export type Database = {
           quantity_per_month: number | null
           responsible_id: string | null
           service_name: string
+          weekday: number | null
         }
         Insert: {
           capture_date?: string | null
@@ -64,6 +65,7 @@ export type Database = {
           quantity_per_month?: number | null
           responsible_id?: string | null
           service_name: string
+          weekday?: number | null
         }
         Update: {
           capture_date?: string | null
@@ -77,6 +79,7 @@ export type Database = {
           quantity_per_month?: number | null
           responsible_id?: string | null
           service_name?: string
+          weekday?: number | null
         }
         Relationships: [
           {
@@ -262,6 +265,7 @@ export type Database = {
           status: string
           title: string
           updated_at: string
+          weekday: number | null
         }
         Insert: {
           assigned_to?: string | null
@@ -278,6 +282,7 @@ export type Database = {
           status?: string
           title: string
           updated_at?: string
+          weekday?: number | null
         }
         Update: {
           assigned_to?: string | null
@@ -294,6 +299,7 @@ export type Database = {
           status?: string
           title?: string
           updated_at?: string
+          weekday?: number | null
         }
         Relationships: []
       }
