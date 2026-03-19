@@ -1132,14 +1132,14 @@ export default function ClientsPage() {
                             </button>
                             {isAdmin && (
                               <button
-                                onClick={() => toggleServiceCompletedMutation.mutate({ id: s.id, completed: !s.completed })}
-                                className={`transition-colors opacity-0 group-hover/svc:opacity-100 ${s.completed ? 'text-emerald-400 hover:text-white/40' : 'text-white/20 hover:text-emerald-400'}`}
-                                title={s.completed ? 'Marcar como ativo' : 'Marcar como concluído'}
+                                onClick={() => toggleServiceCompletedMutation.mutate({ id: s.id, completed: !isCompletedThisMonth, isRecurring: s.is_recurring !== false })}
+                                className={`transition-colors opacity-0 group-hover/svc:opacity-100 ${isCompletedThisMonth ? 'text-emerald-400 hover:text-white/40' : 'text-white/20 hover:text-emerald-400'}`}
+                                title={isCompletedThisMonth ? 'Marcar como ativo' : 'Marcar como concluído'}
                               >
                                 <CheckCircle2 className="w-3.5 h-3.5" />
                               </button>
                             )}
-                            {!s.completed && (
+                            {!isCompletedThisMonth && (
                               <button
                                 onClick={() => {
                                   if (showingForm) {
