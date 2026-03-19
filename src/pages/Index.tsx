@@ -19,16 +19,16 @@ import sertaoLogo from '@/assets/clients/sertao-fire.png';
 import viviLogo from '@/assets/clients/vivi-closet.png';
 
 const LOGOS = [
-  { src: acquavilleLogo, alt: "Acquaville", invert: false },
-  { src: d2Logo, alt: "D2 Blocos e Pisos", invert: false },
-  { src: maiconLogo, alt: "Dr. Maicon Bandeira", invert: true },
-  { src: vitallisLogo, alt: "Vitallis", invert: false },
-  { src: joileLogo, alt: "Joile Barreto", invert: false },
-  { src: realLogo, alt: "Real Calçados", invert: false },
-  { src: remaxLogo, alt: "RE/MAX", invert: false },
-  { src: csClubLogo, alt: "CS Club", invert: true },
-  { src: sertaoLogo, alt: "Sertão Fire", invert: false },
-  { src: viviLogo, alt: "Vivi Closet", invert: true },
+  { src: acquavilleLogo, alt: "Acquaville", invert: false, className: "" },
+  { src: d2Logo, alt: "D2 Blocos e Pisos", invert: false, className: "" },
+  { src: maiconLogo, alt: "Dr. Maicon Bandeira", invert: true, className: "h-28 md:h-36" },
+  { src: vitallisLogo, alt: "Vitallis", invert: false, className: "" },
+  { src: joileLogo, alt: "Joile Barreto", invert: false, className: "" },
+  { src: realLogo, alt: "Real Calçados", invert: false, className: "" },
+  { src: remaxLogo, alt: "RE/MAX", invert: false, className: "" },
+  { src: csClubLogo, alt: "CS Club", invert: true, className: "" },
+  { src: sertaoLogo, alt: "Sertão Fire", invert: false, className: "" },
+  { src: viviLogo, alt: "Vivi Closet", invert: true, className: "h-28 md:h-36" },
 ];
 
 const TEAM_DATA = [
@@ -302,12 +302,12 @@ export default function Index() {
         <ul className="flex items-center justify-center md:justify-start [&_li]:mx-8 [&_img]:max-w-none animate-infinite-scroll">
           {LOGOS.map((logo, index) => (
             <li key={index}>
-              <img src={logo.src} alt={logo.alt} className={`h-20 md:h-24 opacity-70 hover:opacity-100 transition-all duration-300 ${logo.invert ? 'brightness-0 invert' : ''}`} />
+              <img src={logo.src} alt={logo.alt} className={`${logo.className || 'h-20 md:h-24'} opacity-70 hover:opacity-100 transition-all duration-300 ${logo.invert ? 'brightness-0 invert' : ''}`} />
             </li>
           ))}
           {LOGOS.map((logo, index) => (
             <li key={`dup-${index}`}>
-              <img src={logo.src} alt={logo.alt} className={`h-20 md:h-24 opacity-70 hover:opacity-100 transition-all duration-300 ${logo.invert ? 'brightness-0 invert' : ''}`} />
+              <img src={logo.src} alt={logo.alt} className={`${logo.className || 'h-20 md:h-24'} opacity-70 hover:opacity-100 transition-all duration-300 ${logo.invert ? 'brightness-0 invert' : ''}`} />
             </li>
           ))}
         </ul>
