@@ -285,6 +285,38 @@ export type Database = {
         }
         Relationships: []
       }
+      service_completions: {
+        Row: {
+          completed_at: string
+          completed_by: string
+          id: string
+          month: string
+          service_id: string
+        }
+        Insert: {
+          completed_at?: string
+          completed_by: string
+          id?: string
+          month: string
+          service_id: string
+        }
+        Update: {
+          completed_at?: string
+          completed_by?: string
+          id?: string
+          month?: string
+          service_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "service_completions_service_id_fkey"
+            columns: ["service_id"]
+            isOneToOne: false
+            referencedRelation: "client_services"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       tasks: {
         Row: {
           assigned_to: string | null
