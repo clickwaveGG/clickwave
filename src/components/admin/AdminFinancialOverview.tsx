@@ -162,7 +162,7 @@ export default function AdminFinancialOverview({ services }: FinancialOverviewPr
       </div>
 
       {/* Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
         {cards.map((c) => (
           <div key={c.label} className="rounded-2xl border border-white/10 bg-white/[0.03] p-5">
             <div className="flex items-center gap-3 mb-3">
