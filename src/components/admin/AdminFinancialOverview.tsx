@@ -1,23 +1,157 @@
-import { DollarSign, TrendingUp, Users, Wallet } from 'lucide-react';
+import { useState, useMemo } from 'react';
+import { DollarSign, TrendingUp, Users, Wallet, CalendarIcon, ChevronLeft, ChevronRight } from 'lucide-react';
+import { format, startOfMonth, endOfMonth, subMonths, addMonths, isWithinInterval, isBefore } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
+import { Calendar } from '@/components/ui/calendar';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { cn } from '@/lib/utils';
+import type { DateRange } from 'react-day-picker';
 
-interface FinancialOverviewProps {
-  totalRevenue: number;
-  totalProfit: number;
-  totalPayments: number;
-  memberPayments: { name: string; total: number }[];
+interface Service {
+  id: string;
+  price: number | null;
+  profit: number | null;
+  member_payment: number | null;
+  completed: boolean;
+  created_at: string;
+  responsible_id: string | null;
+  responsible_name?: string;
+  client_name?: string;
+  service_name: string;
 }
 
-export default function AdminFinancialOverview({ totalRevenue, totalProfit, totalPayments, memberPayments }: FinancialOverviewProps) {
+interface FinancialOverviewProps {
+  services: Service[];
+}
+
+export default function AdminFinancialOverview({ services }: FinancialOverviewProps) {
+  const now = new Date();
+  const [currentMonth, setCurrentMonth] = useState(now);
+  const [customRange, setCustomRange] = useState<DateRange | undefined>(undefined);
+  const [mode, setMode] = useState<'month' | 'custom'>('month');
+
   const fmt = (v: number) => v.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
+  const rangeStart = mode === 'month' ? startOfMonth(currentMonth) : customRange?.from;
+  const rangeEnd = mode === 'month' ? endOfMonth(currentMonth) : customRange?.to;
+
+  // Filter services active during the selected period
+  const filteredServices = useMemo(() => {
+    if (!rangeStart || !rangeEnd) return services.filter(s => !s.completed);
+
+    return services.filter(s => {
+      const createdAt = new Date(s.created_at);
+      // Service must have been created before or during the range end
+      if (isBefore(rangeEnd, createdAt)) return false;
+      // Completed services are excluded (they're one-off and done)
+      if (s.completed) return false;
+      return true;
+    });
+  }, [services, rangeStart, rangeEnd]);
+
+  const totalRevenue = filteredServices.reduce((sum, s) => sum + (Number(s.price) || 0), 0);
+  const totalProfit = filteredServices.reduce((sum, s) => sum + (Number(s.profit) || 0), 0);
+  const totalPayments = filteredServices.reduce((sum, s) => sum + (Number(s.member_payment) || 0), 0);
+
+  const memberPaymentsMap: Record<string, { name: string; total: number }> = {};
+  filteredServices.forEach(s => {
+    if (s.responsible_id && (Number(s.member_payment) || 0) > 0) {
+      if (!memberPaymentsMap[s.responsible_id]) {
+        memberPaymentsMap[s.responsible_id] = { name: s.responsible_name || '—', total: 0 };
+      }
+      memberPaymentsMap[s.responsible_id].total += Number(s.member_payment) || 0;
+    }
+  });
+  const memberPayments = Object.values(memberPaymentsMap).sort((a, b) => b.total - a.total);
+
+  const monthLabel = format(currentMonth, "MMMM 'de' yyyy", { locale: ptBR });
+  const isCurrentMonth = currentMonth.getMonth() === now.getMonth() && currentMonth.getFullYear() === now.getFullYear();
+
   const cards = [
-    { label: 'Faturamento Total', value: `R$ ${fmt(totalRevenue)}`, icon: DollarSign, accent: 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20' },
-    { label: 'Lucro Total', value: `R$ ${fmt(totalProfit)}`, icon: TrendingUp, accent: 'text-blue-400 bg-blue-500/10 border-blue-500/20' },
-    { label: 'Total a Pagar (Equipe)', value: `R$ ${fmt(totalPayments)}`, icon: Wallet, accent: 'text-orange-400 bg-orange-500/10 border-orange-500/20' },
+    { label: 'Faturamento', value: `R$ ${fmt(totalRevenue)}`, icon: DollarSign, accent: 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20' },
+    { label: 'Lucro', value: `R$ ${fmt(totalProfit)}`, icon: TrendingUp, accent: 'text-blue-400 bg-blue-500/10 border-blue-500/20' },
+    { label: 'Pagar (Equipe)', value: `R$ ${fmt(totalPayments)}`, icon: Wallet, accent: 'text-orange-400 bg-orange-500/10 border-orange-500/20' },
   ];
 
   return (
     <div className="space-y-4">
+      {/* Period selector */}
+      <div className="flex items-center gap-3 flex-wrap">
+        {/* Mode toggle */}
+        <div className="flex rounded-lg border border-white/10 overflow-hidden">
+          <button
+            onClick={() => setMode('month')}
+            className={`px-3 py-1.5 text-[10px] font-mono uppercase tracking-wider transition-colors ${
+              mode === 'month' ? 'bg-brand-orange/10 text-brand-orange border-r border-white/10' : 'text-white/30 hover:text-white/50 border-r border-white/10'
+            }`}
+          >
+            Mensal
+          </button>
+          <button
+            onClick={() => setMode('custom')}
+            className={`px-3 py-1.5 text-[10px] font-mono uppercase tracking-wider transition-colors ${
+              mode === 'custom' ? 'bg-brand-orange/10 text-brand-orange' : 'text-white/30 hover:text-white/50'
+            }`}
+          >
+            Período
+          </button>
+        </div>
+
+        {mode === 'month' ? (
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setCurrentMonth(m => subMonths(m, 1))}
+              className="w-7 h-7 rounded-lg border border-white/10 flex items-center justify-center text-white/30 hover:text-white/60 hover:border-white/20 transition-colors"
+            >
+              <ChevronLeft className="w-3.5 h-3.5" />
+            </button>
+            <span className="text-sm font-mono text-white/60 min-w-[160px] text-center capitalize">
+              {monthLabel}
+              {isCurrentMonth && <span className="ml-1.5 text-[9px] text-brand-orange">(atual)</span>}
+            </span>
+            <button
+              onClick={() => setCurrentMonth(m => addMonths(m, 1))}
+              className="w-7 h-7 rounded-lg border border-white/10 flex items-center justify-center text-white/30 hover:text-white/60 hover:border-white/20 transition-colors"
+            >
+              <ChevronRight className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        ) : (
+          <Popover>
+            <PopoverTrigger asChild>
+              <button className={cn(
+                "flex items-center gap-2 px-3 py-1.5 rounded-lg border text-sm font-mono transition-colors",
+                customRange?.from
+                  ? "border-brand-orange/30 text-white/70"
+                  : "border-white/10 text-white/30"
+              )}>
+                <CalendarIcon className="w-3.5 h-3.5" />
+                {customRange?.from ? (
+                  customRange.to ? (
+                    `${format(customRange.from, 'dd/MM/yy')} — ${format(customRange.to, 'dd/MM/yy')}`
+                  ) : (
+                    format(customRange.from, 'dd/MM/yyyy')
+                  )
+                ) : (
+                  'Selecionar período'
+                )}
+              </button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-0 bg-[#1a1a1a] border-white/10" align="start">
+              <Calendar
+                mode="range"
+                selected={customRange}
+                onSelect={setCustomRange}
+                numberOfMonths={2}
+                locale={ptBR}
+                className="p-3 pointer-events-auto"
+              />
+            </PopoverContent>
+          </Popover>
+        )}
+      </div>
+
+      {/* Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         {cards.map((c) => (
           <div key={c.label} className="rounded-2xl border border-white/10 bg-white/[0.03] p-5">
@@ -32,6 +166,7 @@ export default function AdminFinancialOverview({ totalRevenue, totalProfit, tota
         ))}
       </div>
 
+      {/* Member payments */}
       {memberPayments.length > 0 && (
         <div className="rounded-2xl border border-white/10 bg-white/[0.03] overflow-hidden">
           <div className="p-4 border-b border-white/5 flex items-center gap-2">

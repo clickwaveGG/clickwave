@@ -72,22 +72,8 @@ export default function AdminPanel() {
     },
   });
 
-  // Financial calculations — exclude completed (one-off) services
-  const activeServices = allServices.filter((s: any) => !s.completed);
-  const totalRevenue = activeServices.reduce((sum: number, s: any) => sum + (Number(s.price) || 0), 0);
-  const totalProfit = activeServices.reduce((sum: number, s: any) => sum + (Number(s.profit) || 0), 0);
-  const totalPayments = activeServices.reduce((sum: number, s: any) => sum + (Number(s.member_payment) || 0), 0);
+  // Services for financial overview (component handles filtering internally)
 
-  const memberPaymentsMap: Record<string, { name: string; total: number }> = {};
-  activeServices.forEach((s: any) => {
-    if (s.responsible_id && (Number(s.member_payment) || 0) > 0) {
-      if (!memberPaymentsMap[s.responsible_id]) {
-        memberPaymentsMap[s.responsible_id] = { name: s.responsible_name || '—', total: 0 };
-      }
-      memberPaymentsMap[s.responsible_id].total += Number(s.member_payment) || 0;
-    }
-  });
-  const memberPayments = Object.values(memberPaymentsMap).sort((a, b) => b.total - a.total);
 
   // Mutations
   const createAnnouncement = useMutation({
@@ -172,13 +158,8 @@ export default function AdminPanel() {
       {/* Overview Tab */}
       {activeTab === 'overview' && (
         <div className="space-y-6">
-          <AdminFinancialOverview
-            totalRevenue={totalRevenue}
-            totalProfit={totalProfit}
-            totalPayments={totalPayments}
-            memberPayments={memberPayments}
-          />
-          <AdminServiceProfitTable services={activeServices as any} />
+          <AdminFinancialOverview services={allServices as any} />
+          <AdminServiceProfitTable services={allServices.filter((s: any) => !s.completed) as any} />
         </div>
       )}
 
