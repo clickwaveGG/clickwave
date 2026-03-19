@@ -13,6 +13,7 @@ interface Service {
   profit: number | null;
   member_payment: number | null;
   completed: boolean;
+  is_recurring: boolean;
   created_at: string;
   responsible_id: string | null;
   responsible_name?: string;
@@ -20,11 +21,17 @@ interface Service {
   service_name: string;
 }
 
-interface FinancialOverviewProps {
-  services: Service[];
+interface ServiceCompletion {
+  service_id: string;
+  month: string;
 }
 
-export default function AdminFinancialOverview({ services }: FinancialOverviewProps) {
+interface FinancialOverviewProps {
+  services: Service[];
+  completions: ServiceCompletion[];
+}
+
+export default function AdminFinancialOverview({ services, completions }: FinancialOverviewProps) {
   const now = new Date();
   const [currentMonth, setCurrentMonth] = useState(now);
   const [customRange, setCustomRange] = useState<DateRange | undefined>(undefined);
