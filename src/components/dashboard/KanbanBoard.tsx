@@ -112,8 +112,9 @@ export function KanbanBoard({ tasks }: { tasks: Task[] }) {
     invalidate();
   };
 
-  const pendingVideoTasks = tasks.filter(t => !t.capture_date && !t.due_date && t.status === 'todo');
-  const regularTasks = tasks.filter(t => !(pendingVideoTasks.includes(t)));
+  const isVideoTask = (t: Task) => t.title.toLowerCase().includes('vídeo') || t.title.toLowerCase().includes('video');
+  const pendingVideoTasks = tasks.filter(t => isVideoTask(t) && !t.capture_date && !t.due_date && t.status === 'todo');
+  const regularTasks = tasks.filter(t => !pendingVideoTasks.includes(t));
 
   return (
     <div>
