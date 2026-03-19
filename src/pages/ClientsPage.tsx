@@ -615,11 +615,11 @@ export default function ClientsPage() {
     }));
   };
 
-  const updateAddServiceRow = (i: number, field: keyof ServiceRow, value: string) => {
+  const updateAddServiceRow = (i: number, field: keyof ServiceRow, value: string | boolean) => {
     setAddServiceRows(prev => prev.map((r, idx) => {
       if (idx !== i) return r;
       const updated = { ...r, [field]: value };
-      if (field === 'service_name' && SERVICE_DEFAULT_RESPONSIBLE[value] && !r.responsible_id) {
+      if (field === 'service_name' && typeof value === 'string' && SERVICE_DEFAULT_RESPONSIBLE[value] && !r.responsible_id) {
         updated.responsible_id = SERVICE_DEFAULT_RESPONSIBLE[value];
       }
       return updated;
