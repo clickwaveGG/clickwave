@@ -889,6 +889,89 @@ export default function ClientsPage() {
                     const showingForm = addTaskForService === s.id;
                     return (
                       <div key={s.id} className={`group/svc rounded-xl border p-3 ${s.completed ? 'border-emerald-500/20 bg-emerald-500/5 opacity-60' : 'border-white/10 bg-white/[0.02]'}`}>
+                      {editingServiceId === s.id ? (
+                        /* ---- EDIT MODE ---- */
+                        <div className="space-y-2">
+                          <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+                            <div className="col-span-2 md:col-span-1">
+                              <label className="text-[9px] font-mono text-white/25 uppercase mb-1 block">Serviço</label>
+                              <FloatingSelect
+                                value={editServiceForm.service_name}
+                                onChange={val => setEditServiceForm(f => ({ ...f, service_name: val }))}
+                                options={SERVICE_PRESETS.map(sp => ({ value: sp, label: sp }))}
+                                placeholder="Serviço..."
+                              />
+                            </div>
+                            <div>
+                              <label className="text-[9px] font-mono text-white/25 uppercase mb-1 block">Responsável</label>
+                              <FloatingSelect
+                                value={editServiceForm.responsible_id}
+                                onChange={val => setEditServiceForm(f => ({ ...f, responsible_id: val }))}
+                                options={profiles.map((p: any) => ({ value: p.user_id, label: p.full_name }))}
+                                placeholder="Selecionar..."
+                              />
+                            </div>
+                            {isAdmin && (
+                              <div>
+                                <label className="text-[9px] font-mono text-white/25 uppercase mb-1 block">Valor</label>
+                                <input type="number" step="0.01" min="0" value={editServiceForm.price} onChange={e => setEditServiceForm(f => ({ ...f, price: e.target.value }))} placeholder="0,00" className={`w-full ${inputClass}`} />
+                              </div>
+                            )}
+                          </div>
+                          <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+                            <div>
+                              <label className="text-[9px] font-mono text-white/25 uppercase mb-1 block">Qtd/mês</label>
+                              <input type="number" min="0" value={editServiceForm.quantity_per_month} onChange={e => setEditServiceForm(f => ({ ...f, quantity_per_month: e.target.value }))} placeholder="∞" className={`w-full ${inputClass}`} />
+                            </div>
+                            <div>
+                              <label className="text-[9px] font-mono text-white/25 uppercase mb-1 block">Tipo</label>
+                              <div className="flex rounded-lg border border-white/10 overflow-hidden">
+                                <button type="button" onClick={() => setEditServiceForm(f => ({ ...f, is_recurring: true }))} className={`flex-1 px-2 py-1.5 text-[9px] font-mono transition-colors ${editServiceForm.is_recurring ? 'bg-blue-500/10 text-blue-400' : 'text-white/25'}`}>
+                                  Recorrente
+                                </button>
+                                <button type="button" onClick={() => setEditServiceForm(f => ({ ...f, is_recurring: false }))} className={`flex-1 px-2 py-1.5 text-[9px] font-mono transition-colors ${!editServiceForm.is_recurring ? 'bg-amber-500/10 text-amber-400' : 'text-white/25'}`}>
+                                  Pontual
+                                </button>
+                              </div>
+                            </div>
+                            {isTrafficSvc && (
+                              <div>
+                                <label className="text-[9px] font-mono text-white/25 uppercase mb-1 block">Dia da semana</label>
+                                <select value={editServiceForm.weekday} onChange={e => setEditServiceForm(f => ({ ...f, weekday: e.target.value }))} className={`w-full ${inputClass}`}>
+                                  <option value="" className="bg-brand-black">—</option>
+                                  {WEEKDAY_LABELS.map((label, i) => <option key={i} value={String(i)} className="bg-brand-black">{label}</option>)}
+                                </select>
+                              </div>
+                            )}
+                          </div>
+                          <div>
+                            <label className="text-[9px] font-mono text-white/25 uppercase mb-1 block">Especificidade</label>
+                            <input type="text" value={editServiceForm.notes} onChange={e => setEditServiceForm(f => ({ ...f, notes: e.target.value }))} placeholder="Ex: 4 vídeos de 30s..." className={`w-full ${inputClass}`} />
+                          </div>
+                          <div className="flex justify-end gap-2 pt-1">
+                            <button onClick={() => setEditingServiceId(null)} className="text-[10px] font-mono px-3 py-1.5 text-white/30 hover:text-white/60">Cancelar</button>
+                            <button
+                              onClick={() => {
+                                const updates: Record<string, any> = {
+                                  service_name: editServiceForm.service_name.trim(),
+                                  responsible_id: editServiceForm.responsible_id || null,
+                                  is_recurring: editServiceForm.is_recurring,
+                                  notes: editServiceForm.notes.trim() || null,
+                                  quantity_per_month: editServiceForm.quantity_per_month ? parseInt(editServiceForm.quantity_per_month) : null,
+                                  weekday: editServiceForm.weekday ? parseInt(editServiceForm.weekday) : null,
+                                };
+                                if (isAdmin) updates.price = editServiceForm.price ? parseFloat(editServiceForm.price) : 0;
+                                updateServiceMutation.mutate({ id: s.id, updates });
+                                setEditingServiceId(null);
+                              }}
+                              className="text-[10px] font-mono px-3 py-1.5 rounded-lg bg-brand-orange text-brand-black font-medium hover:bg-brand-orange/90"
+                            >
+                              Salvar
+                            </button>
+                          </div>
+                        </div>
+                      ) : (
+                        /* ---- VIEW MODE ---- */
                         <div className="flex items-center gap-3">
                           <div className="flex-1 min-w-0">
                             <p className={`text-sm truncate ${s.completed ? 'text-white/40 line-through' : 'text-white'}`}>{s.service_name}</p>
@@ -912,6 +995,24 @@ export default function ClientsPage() {
                                 R$ {Number(s.price).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                               </span>
                             )}
+                            <button
+                              onClick={() => {
+                                setEditingServiceId(s.id);
+                                setEditServiceForm({
+                                  service_name: s.service_name || '',
+                                  responsible_id: s.responsible_id || '',
+                                  price: s.price ? String(s.price) : '',
+                                  quantity_per_month: s.quantity_per_month ? String(s.quantity_per_month) : '',
+                                  is_recurring: s.is_recurring !== false,
+                                  notes: s.notes || '',
+                                  weekday: s.weekday != null ? String(s.weekday) : '',
+                                });
+                              }}
+                              className="text-white/15 hover:text-brand-orange transition-colors opacity-0 group-hover/svc:opacity-100"
+                              title="Editar serviço"
+                            >
+                              <Pencil className="w-3.5 h-3.5" />
+                            </button>
                             {isAdmin && (
                               <button
                                 onClick={() => toggleServiceCompletedMutation.mutate({ id: s.id, completed: !s.completed })}
@@ -946,6 +1047,7 @@ export default function ClientsPage() {
                             </button>
                           </div>
                         </div>
+                      )}
                         {/* Inline task creation form for this service */}
                         {showingForm && (
                           <div className="mt-3 pt-3 border-t border-white/5 space-y-2">
