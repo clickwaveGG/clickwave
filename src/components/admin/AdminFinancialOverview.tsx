@@ -57,7 +57,8 @@ export default function AdminFinancialOverview({ services }: FinancialOverviewPr
     });
   }, [services, rangeStart, rangeEnd]);
 
-  const totalRevenue = filteredServices.reduce((sum, s) => sum + (Number(s.price) || 0), 0);
+  const estimatedRevenue = filteredServices.filter(s => !s.completed).reduce((sum, s) => sum + (Number(s.price) || 0), 0);
+  const realRevenue = filteredServices.filter(s => s.completed).reduce((sum, s) => sum + (Number(s.price) || 0), 0);
   const totalProfit = filteredServices.reduce((sum, s) => sum + (Number(s.profit) || 0), 0);
   const totalPayments = filteredServices.reduce((sum, s) => sum + (Number(s.member_payment) || 0), 0);
 
@@ -76,7 +77,8 @@ export default function AdminFinancialOverview({ services }: FinancialOverviewPr
   const isCurrentMonth = currentMonth.getMonth() === now.getMonth() && currentMonth.getFullYear() === now.getFullYear();
 
   const cards = [
-    { label: 'Faturamento', value: `R$ ${fmt(totalRevenue)}`, icon: DollarSign, accent: 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20' },
+    { label: 'Fat. Estimado', value: `R$ ${fmt(estimatedRevenue)}`, icon: DollarSign, accent: 'text-yellow-400 bg-yellow-500/10 border-yellow-500/20' },
+    { label: 'Fat. Real', value: `R$ ${fmt(realRevenue)}`, icon: CheckCircle2, accent: 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20' },
     { label: 'Lucro', value: `R$ ${fmt(totalProfit)}`, icon: TrendingUp, accent: 'text-blue-400 bg-blue-500/10 border-blue-500/20' },
     { label: 'Pagar (Equipe)', value: `R$ ${fmt(totalPayments)}`, icon: Wallet, accent: 'text-orange-400 bg-orange-500/10 border-orange-500/20' },
   ];
