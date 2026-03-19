@@ -43,8 +43,16 @@ export default function AdminFinancialOverview({ services }: FinancialOverviewPr
       const createdAt = new Date(s.created_at);
       // Service must have been created before or during the range end
       if (isBefore(rangeEnd, createdAt)) return false;
-      // Completed services are excluded (they're one-off and done)
-      if (s.completed) return false;
+
+      if (s.completed) {
+        // Completed (one-off) services only count in the month they were created
+        const createdMonth = startOfMonth(createdAt);
+        const createdMonthEnd = endOfMonth(createdAt);
+        // Check if the selected range overlaps with the creation month
+        const overlaps = !isBefore(rangeEnd, createdMonth) && !isBefore(createdMonthEnd, rangeStart);
+        return overlaps;
+      }
+
       return true;
     });
   }, [services, rangeStart, rangeEnd]);
