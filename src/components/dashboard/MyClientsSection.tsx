@@ -276,7 +276,7 @@ export function MyClientsSection() {
                   {/* Organize button */}
                   {pending > 0 && (
                     <button
-                      onClick={() => navigate('/dashboard/clients')}
+                      onClick={() => navigate('/dashboard/calendar')}
                       className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl border border-brand-orange/20 bg-brand-orange/5 text-brand-orange text-xs font-mono hover:bg-brand-orange/10 transition-colors"
                     >
                       <ExternalLink className="w-3.5 h-3.5" />
