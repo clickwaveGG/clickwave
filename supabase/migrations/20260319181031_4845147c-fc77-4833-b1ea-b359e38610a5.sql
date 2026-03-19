@@ -1,0 +1,1 @@
+ALTER TABLE public.client_services ADD COLUMN last_reset_at timestamptz DEFAULT NULL;
