@@ -33,17 +33,17 @@ const LOGOS = [
 
 const TEAM_DATA = [
   {
-    title: "Pedro Antônio",
-    subtitle: "Co-Fundador & Estrategista de Tráfego",
+    title: "Pedro Dourado",
+    subtitle: "Fundador & Estrategista de Tráfego",
     content: (
       <div>
         <p className="text-white/70 text-sm md:text-base font-light mb-8">
-          Co-fundador da Clickwave e um dos comandantes à frente do exército. Especialista em gestão de tráfego e estratégias de alta performance, transforma dados em domínio de mercado com precisão cirúrgica.
+          Fundador da Clickwave e comandante na linha de frente. Especialista em incursões de alta performance, converte dados brutos em inteligência tática. Utiliza tráfego pago como artilharia de precisão para romper defesas e estabelecer dominância absoluta no mercado.
         </p>
         <div className="w-full sm:w-3/4 md:w-1/2">
           <img
             src="https://i.postimg.cc/2yrMw8pS/Sem-nome-(14-218-x-14-218-in).png"
-            alt="Pedro Antônio"
+            alt="Pedro Dourado"
             className="rounded-lg w-full h-auto shadow-[0_0_20px_rgba(0,0,0,0.5)] transition-all duration-500"
             referrerPolicy="no-referrer"
           />
