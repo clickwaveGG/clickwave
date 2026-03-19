@@ -399,7 +399,9 @@ export default function ClientsPage() {
             service_name: s.service_name.trim(),
             responsible_id: s.responsible_id || SERVICE_DEFAULT_RESPONSIBLE[s.service_name.trim()] || null,
             price: s.price ? parseFloat(s.price) : 0,
-            quantity_per_month: s.quantity_per_month ? parseInt(s.quantity_per_month) : null,
+            quantity_per_month: s.qty_indefinite ? null : (s.quantity_per_month ? parseInt(s.quantity_per_month) : null),
+            is_recurring: s.is_recurring,
+            notes: s.notes.trim() || null,
             last_reset_at: new Date().toISOString(),
           }))
         );
