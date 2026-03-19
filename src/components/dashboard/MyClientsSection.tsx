@@ -2,9 +2,10 @@ import { useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { useQuery } from '@tanstack/react-query';
-import { Users, CheckCircle2, Circle, ChevronDown, ChevronUp, X, Package, Video, Palette, Globe, Megaphone, Bot, LayoutGrid } from 'lucide-react';
+import { Users, CheckCircle2, Circle, ChevronDown, ChevronUp, Package, Video, Palette, Globe, Megaphone, Bot, ExternalLink } from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import { useNavigate } from 'react-router-dom';
 
 function getServiceIcon(name: string) {
   const n = name.toLowerCase();
@@ -16,36 +17,9 @@ function getServiceIcon(name: string) {
   return Package;
 }
 
-function groupServices(services: any[]) {
-  const groups: { label: string; items: any[]; isGroup: boolean }[] = [];
-  const singles: any[] = [];
-  const grouped = new Map<string, any[]>();
-
-  services.forEach((s: any) => {
-    // Detect patterns like "Vídeo 1/10", "Vídeo 2/10"
-    const match = s.service_name.match(/^(.+?)\s*\d+\s*\/\s*\d+/);
-    if (match) {
-      const key = match[1].trim();
-      if (!grouped.has(key)) grouped.set(key, []);
-      grouped.get(key)!.push(s);
-    } else {
-      singles.push(s);
-    }
-  });
-
-  grouped.forEach((items, label) => {
-    groups.push({ label, items, isGroup: true });
-  });
-
-  singles.forEach(s => {
-    groups.push({ label: s.service_name, items: [s], isGroup: false });
-  });
-
-  return groups;
-}
-
 export function MyClientsSection() {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [expandedClient, setExpandedClient] = useState<string | null>(null);
   const currentMonth = format(new Date(), 'yyyy-MM-01');
 
@@ -76,6 +50,19 @@ export function MyClientsSection() {
     enabled: services.length > 0,
   });
 
+  // Count tasks completed this month per client
+  const { data: taskCounts = [] } = useQuery({
+    queryKey: ['my-tasks-counts', user?.id, currentMonth],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from('tasks')
+        .select('id, client_name, status')
+        .eq('assigned_to', user!.id);
+      return data || [];
+    },
+    enabled: !!user,
+  });
+
   const clientMap = new Map<string, { name: string; services: any[] }>();
   services.forEach((s: any) => {
     const clientName = s.clients?.name || 'Sem cliente';
@@ -92,6 +79,17 @@ export function MyClientsSection() {
     if (s.is_recurring) return completedServiceIds.has(s.id);
     return s.completed;
   };
+
+  // Count done tasks per client name
+  const doneTasksByClient = new Map<string, number>();
+  const totalTasksByClient = new Map<string, number>();
+  taskCounts.forEach((t: any) => {
+    if (!t.client_name) return;
+    totalTasksByClient.set(t.client_name, (totalTasksByClient.get(t.client_name) || 0) + 1);
+    if (t.status === 'done') {
+      doneTasksByClient.set(t.client_name, (doneTasksByClient.get(t.client_name) || 0) + 1);
+    }
+  });
 
   if (clientMap.size === 0) return null;
 
@@ -112,7 +110,10 @@ export function MyClientsSection() {
           const pending = total - done;
           const progress = total > 0 ? Math.round((done / total) * 100) : 0;
           const isExpanded = expandedClient === clientId;
-          const groups = groupServices(clientServices);
+
+          // Task counts for this client
+          const clientDoneTasks = doneTasksByClient.get(name) || 0;
+          const clientTotalTasks = totalTasksByClient.get(name) || 0;
 
           return (
             <div
@@ -123,7 +124,7 @@ export function MyClientsSection() {
                   : 'border-white/10 bg-white/[0.02] hover:border-white/20 hover:bg-white/[0.04] cursor-pointer'
               }`}
             >
-              {/* Card header — always visible */}
+              {/* Card header */}
               <div
                 onClick={() => setExpandedClient(isExpanded ? null : clientId)}
                 className="p-4 cursor-pointer"
@@ -149,25 +150,28 @@ export function MyClientsSection() {
                 {!isExpanded && (
                   <>
                     <div className="space-y-1.5">
-                      {clientServices.slice(0, 4).map((s: any) => {
+                      {clientServices.map((s: any) => {
                         const isDone = isServiceDone(s);
+                        const Icon = getServiceIcon(s.service_name);
+                        const qty = s.quantity_per_month;
                         return (
                           <div key={s.id} className="flex items-center gap-2">
                             {isDone
                               ? <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
                               : <Circle className="w-3.5 h-3.5 text-white/20 shrink-0" />
                             }
+                            <Icon className="w-3 h-3 text-white/15 shrink-0" />
                             <span className={`text-xs truncate ${isDone ? 'text-white/30 line-through' : 'text-white/60'}`}>
                               {s.service_name}
                             </span>
+                            {qty && !isDone && (
+                              <span className="text-[9px] font-mono text-orange-400/60 ml-auto shrink-0">
+                                0/{qty}
+                              </span>
+                            )}
                           </div>
                         );
                       })}
-                      {clientServices.length > 4 && (
-                        <span className="text-[10px] font-mono text-white/20 pl-5">
-                          +{clientServices.length - 4} serviços
-                        </span>
-                      )}
                     </div>
                     <div className="flex items-center gap-3 mt-3 pt-2 border-t border-white/5">
                       <span className="text-[10px] font-mono text-emerald-400/70">{done} feitos</span>
@@ -178,14 +182,14 @@ export function MyClientsSection() {
                 )}
               </div>
 
-              {/* Expanded detail panel */}
+              {/* Expanded detail */}
               {isExpanded && (
                 <div className="px-4 pb-4 border-t border-white/5 pt-4 space-y-4">
                   {/* Summary stats */}
                   <div className="grid grid-cols-3 gap-3">
                     <div className="rounded-xl border border-white/10 bg-white/[0.02] p-3 text-center">
                       <p className="text-xl font-serif text-white">{total}</p>
-                      <p className="text-[10px] font-mono text-white/30 uppercase">Total</p>
+                      <p className="text-[10px] font-mono text-white/30 uppercase">Serviços</p>
                     </div>
                     <div className="rounded-xl border border-emerald-500/20 bg-emerald-500/[0.03] p-3 text-center">
                       <p className="text-xl font-serif text-emerald-400">{done}</p>
@@ -197,58 +201,88 @@ export function MyClientsSection() {
                     </div>
                   </div>
 
-                  {/* Grouped services detail */}
+                  {/* Services detail */}
                   <div className="space-y-2">
-                    {groups.map((group, gIdx) => {
-                      const Icon = getServiceIcon(group.label);
-                      const groupDone = group.items.filter(isServiceDone).length;
-                      const groupTotal = group.items.length;
+                    {clientServices.map((s: any) => {
+                      const isDone = isServiceDone(s);
+                      const Icon = getServiceIcon(s.service_name);
+                      const qty = s.quantity_per_month;
 
                       return (
-                        <div key={gIdx} className="rounded-xl border border-white/8 bg-white/[0.02] p-3">
-                          <div className="flex items-center gap-2.5 mb-2">
+                        <div key={s.id} className="rounded-xl border border-white/8 bg-white/[0.02] p-3">
+                          <div className="flex items-center gap-2.5">
                             <Icon className="w-4 h-4 text-brand-orange/70 shrink-0" />
-                            <span className="text-sm text-white/80 font-medium flex-1">{group.label}</span>
-                            <span className={`text-[10px] font-mono px-2 py-0.5 rounded-full ${
-                              groupDone === groupTotal
-                                ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
-                                : 'bg-white/5 text-white/30 border border-white/10'
-                            }`}>
-                              {groupDone}/{groupTotal}
+                            <span className={`text-sm font-medium flex-1 ${isDone ? 'text-white/30 line-through' : 'text-white/80'}`}>
+                              {s.service_name}
                             </span>
+                            {isDone ? (
+                              <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                                Concluído
+                              </span>
+                            ) : (
+                              <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-orange-500/10 text-orange-400 border border-orange-500/20">
+                                Pendente
+                              </span>
+                            )}
                           </div>
 
-                          {group.isGroup && (
-                            <div className="space-y-1 pl-6">
-                              {group.items.map((s: any) => {
-                                const isDone = isServiceDone(s);
-                                return (
-                                  <div key={s.id} className="flex items-center gap-2">
-                                    {isDone
-                                      ? <CheckCircle2 className="w-3 h-3 text-emerald-400 shrink-0" />
-                                      : <Circle className="w-3 h-3 text-white/15 shrink-0" />
-                                    }
-                                    <span className={`text-[11px] ${isDone ? 'text-white/25 line-through' : 'text-white/50'}`}>
-                                      {s.service_name}
-                                    </span>
-                                    {s.due_date && (
-                                      <span className="text-[9px] font-mono text-white/20 ml-auto">
-                                        {format(new Date(s.due_date), 'dd/MM')}
-                                      </span>
-                                    )}
-                                  </div>
-                                );
-                              })}
+                          {/* Quantity breakdown for services with quantity */}
+                          {qty && (
+                            <div className="mt-2 pl-6">
+                              <div className="flex items-center gap-2 mb-1">
+                                <div className="flex-1 h-1 rounded-full bg-white/5 overflow-hidden">
+                                  <div
+                                    className="h-full rounded-full bg-gradient-to-r from-brand-orange to-brand-orange/60 transition-all duration-500"
+                                    style={{ width: `${isDone ? 100 : Math.round((clientDoneTasks / qty) * 100)}%` }}
+                                  />
+                                </div>
+                                <span className="text-[10px] font-mono text-white/30">
+                                  {isDone ? qty : clientDoneTasks}/{qty}
+                                </span>
+                              </div>
+                              {!isDone && (
+                                <p className="text-[10px] text-white/25">
+                                  {qty - clientDoneTasks > 0
+                                    ? `Faltam ${qty - clientDoneTasks} para completar`
+                                    : 'Todas as entregas feitas — marcar como concluído'
+                                  }
+                                </p>
+                              )}
                             </div>
                           )}
 
-                          {!group.isGroup && group.items[0]?.notes && (
-                            <p className="text-[10px] text-white/25 pl-6 mt-1">{group.items[0].notes}</p>
+                          {!qty && !isDone && (
+                            <p className="text-[10px] text-white/20 mt-1 pl-6">Quantidade indefinida</p>
+                          )}
+
+                          {s.notes && (
+                            <p className="text-[10px] text-white/20 mt-1 pl-6 italic">{s.notes}</p>
                           )}
                         </div>
                       );
                     })}
                   </div>
+
+                  {/* Tasks summary */}
+                  {clientTotalTasks > 0 && (
+                    <div className="rounded-xl border border-white/8 bg-white/[0.02] p-3">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs text-white/50">Tarefas no Kanban</span>
+                        <span className="text-[10px] font-mono text-white/30">{clientDoneTasks}/{clientTotalTasks} concluídas</span>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Organize button */}
+                  {pending > 0 && (
+                    <button
+                      onClick={() => navigate('/dashboard/clients')}
+                      className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl border border-brand-orange/20 bg-brand-orange/5 text-brand-orange text-xs font-mono hover:bg-brand-orange/10 transition-colors"
+                    >
+                      <ExternalLink className="w-3.5 h-3.5" />
+                      Organizar entregas
+                    </button>
+                  )}
                 </div>
               )}
             </div>
