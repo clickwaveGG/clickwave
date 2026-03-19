@@ -7,14 +7,28 @@ import { ArsenalSection } from '../components/ArsenalSection';
 import { ServicesSection } from '../components/ServicesSection';
 import kauanImg from '@/assets/kauan-cabral.png';
 import clickwaveLogo from '@/assets/clickwave-logo.png';
+import acquavilleLogo from '@/assets/clients/acquaville.png';
+import d2Logo from '@/assets/clients/d2-blocos.png';
+import maiconLogo from '@/assets/clients/maicon-bandeira.png';
+import vitallisLogo from '@/assets/clients/vitallis.png';
+import joileLogo from '@/assets/clients/joile-barreto.png';
+import realLogo from '@/assets/clients/real-calcados.png';
+import remaxLogo from '@/assets/clients/remax.png';
+import csClubLogo from '@/assets/clients/cs-club.png';
+import sertaoLogo from '@/assets/clients/sertao-fire.png';
+import viviLogo from '@/assets/clients/vivi-closet.png';
 
 const LOGOS = [
-  { src: "https://upload.wikimedia.org/wikipedia/commons/a/a9/Amazon_logo.svg", alt: "Amazon" },
-  { src: "https://upload.wikimedia.org/wikipedia/commons/2/2f/Google_2015_logo.svg", alt: "Google" },
-  { src: "https://upload.wikimedia.org/wikipedia/commons/4/44/Microsoft_logo.svg", alt: "Microsoft" },
-  { src: "https://upload.wikimedia.org/wikipedia/commons/5/51/IBM_logo.svg", alt: "IBM" },
-  { src: "https://upload.wikimedia.org/wikipedia/commons/0/08/Netflix_2015_logo.svg", alt: "Netflix" },
-  { src: "https://upload.wikimedia.org/wikipedia/commons/b/b9/Slack_Technologies_Logo.svg", alt: "Slack" },
+  { src: acquavilleLogo, alt: "Acquaville" },
+  { src: d2Logo, alt: "D2 Blocos e Pisos" },
+  { src: maiconLogo, alt: "Dr. Maicon Bandeira" },
+  { src: vitallisLogo, alt: "Vitallis" },
+  { src: joileLogo, alt: "Joile Barreto" },
+  { src: realLogo, alt: "Real Calçados" },
+  { src: remaxLogo, alt: "RE/MAX" },
+  { src: csClubLogo, alt: "CS Club" },
+  { src: sertaoLogo, alt: "Sertão Fire" },
+  { src: viviLogo, alt: "Vivi Closet" },
 ];
 
 const TEAM_DATA = [
