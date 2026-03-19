@@ -19,16 +19,16 @@ import sertaoLogo from '@/assets/clients/sertao-fire.png';
 import viviLogo from '@/assets/clients/vivi-closet.png';
 
 const LOGOS = [
-  { src: acquavilleLogo, alt: "Acquaville" },
-  { src: d2Logo, alt: "D2 Blocos e Pisos" },
-  { src: maiconLogo, alt: "Dr. Maicon Bandeira" },
-  { src: vitallisLogo, alt: "Vitallis" },
-  { src: joileLogo, alt: "Joile Barreto" },
-  { src: realLogo, alt: "Real Calçados" },
-  { src: remaxLogo, alt: "RE/MAX" },
-  { src: csClubLogo, alt: "CS Club" },
-  { src: sertaoLogo, alt: "Sertão Fire" },
-  { src: viviLogo, alt: "Vivi Closet" },
+  { src: acquavilleLogo, alt: "Acquaville", invert: false },
+  { src: d2Logo, alt: "D2 Blocos e Pisos", invert: false },
+  { src: maiconLogo, alt: "Dr. Maicon Bandeira", invert: true },
+  { src: vitallisLogo, alt: "Vitallis", invert: false },
+  { src: joileLogo, alt: "Joile Barreto", invert: false },
+  { src: realLogo, alt: "Real Calçados", invert: false },
+  { src: remaxLogo, alt: "RE/MAX", invert: false },
+  { src: csClubLogo, alt: "CS Club", invert: true },
+  { src: sertaoLogo, alt: "Sertão Fire", invert: false },
+  { src: viviLogo, alt: "Vivi Closet", invert: true },
 ];
 
 const TEAM_DATA = [
