@@ -78,7 +78,7 @@ export default function Colleagues() {
                   <div className="min-w-0">
                     <p className="text-sm text-white truncate">{m.full_name || 'Sem nome'}</p>
                     <p className="text-[10px] font-mono uppercase tracking-wider text-white/30">
-                      {m.role === 'admin' ? 'Admin' : 'Membro'}
+                      {m.position || (m.role === 'admin' ? 'Admin' : 'Membro')}
                     </p>
                   </div>
                   <div className="ml-auto text-right shrink-0">
