@@ -34,7 +34,7 @@ const LOGOS = [
 const TEAM_DATA = [
   {
     title: "Pedro Dourado",
-    subtitle: "Fundador & Estrategista de Tráfego",
+    subtitle: "Fundador e General da ClickWave — Estrategista de Marketing e Gestor de Tráfego",
     content: (
       <div>
         <p className="text-white/70 text-sm md:text-base font-light mb-8">
