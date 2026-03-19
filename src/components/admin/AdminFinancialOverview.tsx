@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import { DollarSign, TrendingUp, Users, Wallet, CalendarIcon, ChevronLeft, ChevronRight } from 'lucide-react';
+import { DollarSign, TrendingUp, Users, Wallet, CalendarIcon, ChevronLeft, ChevronRight, CheckCircle2 } from 'lucide-react';
 import { format, startOfMonth, endOfMonth, subMonths, addMonths, isWithinInterval, isBefore } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { Calendar } from '@/components/ui/calendar';
