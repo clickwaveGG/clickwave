@@ -2,7 +2,8 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { CheckCircle2, Clock, ListTodo } from 'lucide-react';
-import { KanbanBoard } from '@/components/dashboard/KanbanBoard';
+import { TodayTasksSection } from '@/components/dashboard/TodayTasksSection';
+import { MyClientsSection } from '@/components/dashboard/MyClientsSection';
 import { WeeklyTasksSection } from '@/components/dashboard/WeeklyTasksSection';
 import { ObjectivesSection } from '@/components/dashboard/ObjectivesSection';
 import { PendingItemsSection } from '@/components/dashboard/PendingItemsSection';
@@ -70,17 +71,13 @@ export default function Dashboard() {
   const firstName = profile?.full_name?.split(' ')[0] || 'Colaborador';
 
   return (
-    <div className="space-y-8 max-w-7xl">
+    <div className="space-y-8 max-w-5xl">
       <div>
         <h1 className="text-3xl md:text-4xl font-serif text-white">
           Olá, <span className="italic">{firstName}.</span>
         </h1>
         <p className="text-white/40 text-sm font-mono mt-2">
-          {profile?.position === 'Gestor de Tráfego' && 'Campanhas, métricas e clientes em um só lugar'}
-          {profile?.position === 'Videomaker' && 'Gravações, edições e entregas audiovisuais em um só lugar'}
-          {profile?.position === 'Gestor de Automações' && 'Fluxos, chatbots e integrações em um só lugar'}
-          {profile?.position === 'Designer' && 'Criações, artes e identidades visuais em um só lugar'}
-          {!profile?.position && 'Seus projetos e tarefas em um só lugar'}
+          Suas entregas e clientes em um só lugar
         </p>
       </div>
 
@@ -90,7 +87,8 @@ export default function Dashboard() {
         <StatCard icon={CheckCircle2} label="Concluídas" value={completedTasks} color="bg-emerald-500/10 text-emerald-400 border border-emerald-500/20" />
       </div>
 
-      <KanbanBoard tasks={tasks} />
+      <TodayTasksSection tasks={tasks} />
+      <MyClientsSection />
       {profile?.position === 'Gestor de Tráfego' && <WeeklyTasksSection />}
       <ObjectivesSection objectives={objectives} />
       <PendingItemsSection items={pendingItems} />
