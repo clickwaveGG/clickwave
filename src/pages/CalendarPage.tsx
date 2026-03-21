@@ -648,19 +648,45 @@ export default function CalendarPage() {
                         const remaining = Math.max(0, qty - s.scheduledCount);
 
                         return (
-                          <div
-                            key={s.id}
-                            draggable
-                            onDragStart={(e) => handleDragStart(e, s)}
-                            className="flex items-center gap-2 px-2.5 py-2 rounded-xl border border-white/8 bg-white/[0.02] cursor-grab active:cursor-grabbing hover:border-brand-orange/20 hover:bg-brand-orange/[0.03] transition-all group"
-                          >
-                            <GripVertical className="w-3 h-3 text-white/10 group-hover:text-white/30 shrink-0" />
-                            <Icon className="w-3.5 h-3.5 text-brand-orange/50 shrink-0" />
-                            <div className="flex-1 min-w-0">
-                              <p className="text-[11px] text-white/60 truncate">{s.service_name}</p>
-                              <p className="text-[9px] font-mono text-white/20">
-                                {s.scheduledCount}/{qty} agendados • <span className="text-orange-400/70">{remaining} restam</span>
-                              </p>
+                          <div key={s.id} className="space-y-1">
+                            <div
+                              draggable
+                              onDragStart={(e) => handleDragStart(e, s)}
+                              className="flex items-center gap-2 px-2.5 py-2 rounded-xl border border-white/8 bg-white/[0.02] cursor-grab active:cursor-grabbing hover:border-brand-orange/20 hover:bg-brand-orange/[0.03] transition-all group"
+                            >
+                              <GripVertical className="w-3 h-3 text-white/10 group-hover:text-white/30 shrink-0" />
+                              <Icon className="w-3.5 h-3.5 text-brand-orange/50 shrink-0" />
+                              <div className="flex-1 min-w-0">
+                                <p className="text-[11px] text-white/60 truncate">{s.service_name}</p>
+                                <p className="text-[9px] font-mono text-white/20">
+                                  {s.scheduledCount}/{qty} agendados • <span className="text-orange-400/70">{remaining} restam</span>
+                                </p>
+                              </div>
+                            </div>
+                            {/* Type selector: Entrega / Gravação */}
+                            <div className="flex gap-1 px-1">
+                              <button
+                                onClick={() => setServiceDragTypes(prev => ({ ...prev, [s.id]: 'entrega' }))}
+                                className={`flex-1 flex items-center justify-center gap-1 py-1 rounded-lg text-[9px] font-mono transition-all border ${
+                                  (serviceDragTypes[s.id] || 'entrega') === 'entrega'
+                                    ? 'border-brand-orange/30 bg-brand-orange/10 text-brand-orange'
+                                    : 'border-white/5 bg-white/[0.01] text-white/25 hover:text-white/40'
+                                }`}
+                              >
+                                <Send className="w-2.5 h-2.5" />
+                                Entrega
+                              </button>
+                              <button
+                                onClick={() => setServiceDragTypes(prev => ({ ...prev, [s.id]: 'gravacao' }))}
+                                className={`flex-1 flex items-center justify-center gap-1 py-1 rounded-lg text-[9px] font-mono transition-all border ${
+                                  serviceDragTypes[s.id] === 'gravacao'
+                                    ? 'border-blue-500/30 bg-blue-500/10 text-blue-400'
+                                    : 'border-white/5 bg-white/[0.01] text-white/25 hover:text-white/40'
+                                }`}
+                              >
+                                <Clapperboard className="w-2.5 h-2.5" />
+                                Gravação
+                              </button>
                             </div>
                           </div>
                         );
