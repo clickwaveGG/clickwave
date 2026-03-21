@@ -654,7 +654,7 @@ export default function CalendarPage() {
               <div className="space-y-3 max-h-[calc(100vh-300px)] overflow-y-auto pr-1">
                 {Array.from(pendingByClient.entries()).map(([clientId, { name, services }]) => (
                   <div key={clientId}>
-                    <p className="text-[10px] font-mono text-white/30 uppercase tracking-wider mb-1.5 px-1">{name}</p>
+                    <p className="text-[11px] font-mono text-brand-orange uppercase tracking-wider mb-1.5 px-1 font-semibold">{name}</p>
                     <div className="space-y-1">
                       {services.map((s) => {
                         const Icon = getServiceIcon(s.service_name);
