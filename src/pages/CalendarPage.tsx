@@ -291,10 +291,18 @@ export default function CalendarPage() {
     };
 
     allTasks.forEach(t => {
+      // Tasks with due_date (entregas)
       if (t.due_date && t.weekday == null) {
         const dateKey = t.due_date.slice(0, 10);
-        addEntry(dateKey, { task: t, dateKey, isRecurring: false, isDone: t.status === 'done' });
+        const isGravTitle = t.title.toLowerCase().startsWith('gravação:');
+        addEntry(dateKey, { task: t, dateKey, isRecurring: false, isDone: t.status === 'done', entryType: isGravTitle ? 'gravacao' : 'entrega' });
       }
+      // Tasks with only capture_date (gravações)
+      if (t.capture_date && !t.due_date && t.weekday == null) {
+        const dateKey = t.capture_date.slice(0, 10);
+        addEntry(dateKey, { task: t, dateKey, isRecurring: false, isDone: t.status === 'done', entryType: 'gravacao' });
+      }
+      // Recurring tasks by weekday
       if (t.weekday != null) {
         const createdDate = new Date(t.created_at || '2000-01-01');
         const monthStart = new Date(year, month, 1);
@@ -305,7 +313,7 @@ export default function CalendarPage() {
             if (jsWeekdayToOurs(date.getDay()) === t.weekday) {
               const dateKey = `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
               const isDone = completionSet.has(`${t.id}:${dateKey}`);
-              addEntry(dateKey, { task: t, dateKey, isRecurring: true, isDone });
+              addEntry(dateKey, { task: t, dateKey, isRecurring: true, isDone, entryType: 'recurring' });
               count++;
             }
           }
