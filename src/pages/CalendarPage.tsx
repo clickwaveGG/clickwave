@@ -5,7 +5,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import {
   ChevronLeft, ChevronRight, CalendarDays, CheckCircle2, XCircle, RotateCcw,
   Video, Palette, Globe, Megaphone, Bot, Package, GripVertical, Calendar as CalendarIcon,
-  Clapperboard, Send
+  Clapperboard, Send, Trash2
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
@@ -583,6 +583,20 @@ export default function CalendarPage() {
             <span className="text-[10px] font-mono text-blue-400/50">
               📹 {format(new Date(entry.task.capture_date), 'dd/MM')}
             </span>
+          )}
+          {showToggle && !entry.isRecurring && !entry.isDone && (
+            <button
+              onClick={async () => {
+                const { error } = await supabase.from('tasks').delete().eq('id', entry.task.id);
+                if (error) { toast.error('Erro ao cancelar'); return; }
+                toast.success('Tarefa cancelada — serviço voltou a pendente');
+                invalidate();
+              }}
+              className="flex items-center gap-1 text-[10px] font-mono px-2 py-1 rounded-lg border border-red-500/20 text-red-400/70 hover:bg-red-500/10 transition-all"
+            >
+              <Trash2 className="w-3 h-3" />
+              Cancelar
+            </button>
           )}
           {showToggle && isAdmin && (
             <button
