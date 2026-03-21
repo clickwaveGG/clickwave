@@ -177,7 +177,7 @@ export default function Index() {
             >
               Marketing é <br />
                 <span className="italic flex items-center justify-center md:justify-start gap-4">
-                  <svg className="w-10 h-10 md:w-14 md:h-14 animate-[spin_15s_linear_infinite]" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+                  <svg className="w-10 h-10 md:w-14 md:h-14 animate-[spin_15s_linear_infinite] translate-y-1 md:translate-y-2" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
                     <circle cx="50" cy="50" r="42" stroke="rgba(255,255,255,0.4)" strokeWidth="2" strokeDasharray="4 4" fill="none" />
                     <line x1="50" y1="5" x2="50" y2="25" stroke="rgba(255,255,255,0.8)" strokeWidth="2" strokeLinecap="round" />
                     <line x1="50" y1="95" x2="50" y2="75" stroke="rgba(255,255,255,0.8)" strokeWidth="2" strokeLinecap="round" />
