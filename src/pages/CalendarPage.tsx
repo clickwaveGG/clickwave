@@ -480,6 +480,7 @@ export default function CalendarPage() {
       const hasGravacao = gravacaoEntries.length > 0;
       const hasEntrega = entregaEntries.length > 0;
       const hasBoth = hasGravacao && hasEntrega;
+      const allDone = entries.length > 0 && entries.every(e => e.isDone);
 
       let dayBgClass = 'border-white/5 bg-white/[0.01] hover:bg-white/[0.03]';
       let dayBgStyle: React.CSSProperties = {};
@@ -487,6 +488,9 @@ export default function CalendarPage() {
       if (isDragTarget) {
         dayBgClass = 'border-brand-orange/50 scale-[1.02]';
         dayBgStyle = { background: 'rgba(255, 140, 50, 0.1)' };
+      } else if (allDone) {
+        dayBgClass = 'border-emerald-500/20';
+        dayBgStyle = { background: 'rgba(16, 185, 129, 0.08)' };
       } else if (hasBoth) {
         dayBgClass = 'border-white/10';
         dayBgStyle = { background: 'linear-gradient(135deg, rgba(59, 130, 246, 0.08) 50%, rgba(255, 140, 50, 0.08) 50%)' };
