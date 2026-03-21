@@ -107,7 +107,7 @@ export default function CalendarPage() {
   const [selectedMiniDay, setSelectedMiniDay] = useState<number | null>(null);
   const [selectedMainDay, setSelectedMainDay] = useState<number | null>(null);
   const [dragOverDay, setDragOverDay] = useState<number | null>(null);
-
+  const [serviceDragTypes, setServiceDragTypes] = useState<Record<string, 'entrega' | 'gravacao'>>({});
   // Capture date dialog state (videomaker only)
   const [captureDialog, setCaptureDialog] = useState<{
     taskId: string;
