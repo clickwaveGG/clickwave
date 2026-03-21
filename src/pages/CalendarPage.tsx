@@ -480,6 +480,7 @@ export default function CalendarPage() {
       const hasGravacao = gravacaoEntries.length > 0;
       const hasEntrega = entregaEntries.length > 0;
       const hasBoth = hasGravacao && hasEntrega;
+      const allDone = entries.length > 0 && entries.every(e => e.isDone);
 
       let dayBgClass = 'border-white/5 bg-white/[0.01] hover:bg-white/[0.03]';
       let dayBgStyle: React.CSSProperties = {};
@@ -487,6 +488,9 @@ export default function CalendarPage() {
       if (isDragTarget) {
         dayBgClass = 'border-brand-orange/50 scale-[1.02]';
         dayBgStyle = { background: 'rgba(255, 140, 50, 0.1)' };
+      } else if (allDone) {
+        dayBgClass = 'border-emerald-500/20';
+        dayBgStyle = { background: 'rgba(16, 185, 129, 0.08)' };
       } else if (hasBoth) {
         dayBgClass = 'border-white/10';
         dayBgStyle = { background: 'linear-gradient(135deg, rgba(59, 130, 246, 0.08) 50%, rgba(255, 140, 50, 0.08) 50%)' };
@@ -660,17 +664,22 @@ export default function CalendarPage() {
               Cancelar
             </button>
           )}
-          {showToggle && isAdmin && (
+          {showToggle && !entry.isDone && (
             <button
               onClick={() => toggleEntryStatus(entry)}
-              className={`ml-auto flex items-center gap-1 text-[10px] font-mono px-2 py-1 rounded-lg border transition-all ${
-                entry.isDone
-                  ? 'border-yellow-500/30 text-yellow-400 hover:bg-yellow-500/10'
-                  : 'border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/10'
-              }`}
+              className="ml-auto flex items-center gap-1 text-[10px] font-mono px-2 py-1 rounded-lg border transition-all border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/10"
             >
-              {entry.isDone ? <RotateCcw className="w-3 h-3" /> : <CheckCircle2 className="w-3 h-3" />}
-              {entry.isDone ? 'Reabrir' : 'Concluir'}
+              <CheckCircle2 className="w-3 h-3" />
+              Concluir
+            </button>
+          )}
+          {showToggle && entry.isDone && (
+            <button
+              onClick={() => toggleEntryStatus(entry)}
+              className="ml-auto flex items-center gap-1 text-[10px] font-mono px-2 py-1 rounded-lg border transition-all border-yellow-500/30 text-yellow-400 hover:bg-yellow-500/10"
+            >
+              <RotateCcw className="w-3 h-3" />
+              Reabrir
             </button>
           )}
         </div>
