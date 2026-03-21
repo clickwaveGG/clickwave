@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -7,10 +8,14 @@ import { MyClientsSection } from '@/components/dashboard/MyClientsSection';
 import { WeeklyTasksSection } from '@/components/dashboard/WeeklyTasksSection';
 import { ObjectivesSection } from '@/components/dashboard/ObjectivesSection';
 import { PendingItemsSection } from '@/components/dashboard/PendingItemsSection';
+import { ClientOverviewSheet } from '@/components/dashboard/ClientOverviewSheet';
 
-function StatCard({ icon: Icon, label, value, color }: { icon: any; label: string; value: number; color: string }) {
+function StatCard({ icon: Icon, label, value, color, onClick }: { icon: any; label: string; value: number; color: string; onClick?: () => void }) {
   return (
-    <div className="rounded-2xl border border-white/10 bg-white/[0.03] backdrop-blur-xl p-5 flex items-center gap-4">
+    <div
+      onClick={onClick}
+      className={`rounded-2xl border border-white/10 bg-white/[0.03] backdrop-blur-xl p-5 flex items-center gap-4 ${onClick ? 'cursor-pointer hover:bg-white/[0.06] hover:border-white/20 transition-all' : ''}`}
+    >
       <div className={`w-11 h-11 rounded-xl flex items-center justify-center ${color}`}>
         <Icon className="w-5 h-5" />
       </div>
@@ -24,6 +29,7 @@ function StatCard({ icon: Icon, label, value, color }: { icon: any; label: strin
 
 export default function Dashboard() {
   const { user, profile } = useAuth();
+  const [overviewOpen, setOverviewOpen] = useState(false);
 
   const { data: tasks = [] } = useQuery({
     queryKey: ['my-tasks', user?.id],
@@ -82,7 +88,7 @@ export default function Dashboard() {
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <StatCard icon={ListTodo} label="Total de tarefas" value={totalTasks} color="bg-brand-orange/10 text-brand-orange border border-brand-orange/20" />
+        <StatCard icon={ListTodo} label="Total de tarefas" value={totalTasks} color="bg-brand-orange/10 text-brand-orange border border-brand-orange/20" onClick={() => setOverviewOpen(true)} />
         <StatCard icon={Clock} label="Pendentes" value={pendingTasks} color="bg-yellow-500/10 text-yellow-400 border border-yellow-500/20" />
         <StatCard icon={CheckCircle2} label="Concluídas" value={completedTasks} color="bg-emerald-500/10 text-emerald-400 border border-emerald-500/20" />
       </div>
@@ -92,6 +98,8 @@ export default function Dashboard() {
       {profile?.position === 'Gestor de Tráfego' && <WeeklyTasksSection />}
       <ObjectivesSection objectives={objectives} />
       <PendingItemsSection items={pendingItems} />
+
+      <ClientOverviewSheet open={overviewOpen} onOpenChange={setOverviewOpen} />
     </div>
   );
 }
