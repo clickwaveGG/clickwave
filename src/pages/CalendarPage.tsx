@@ -660,17 +660,22 @@ export default function CalendarPage() {
               Cancelar
             </button>
           )}
-          {showToggle && isAdmin && (
+          {showToggle && !entry.isDone && (
             <button
               onClick={() => toggleEntryStatus(entry)}
-              className={`ml-auto flex items-center gap-1 text-[10px] font-mono px-2 py-1 rounded-lg border transition-all ${
-                entry.isDone
-                  ? 'border-yellow-500/30 text-yellow-400 hover:bg-yellow-500/10'
-                  : 'border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/10'
-              }`}
+              className="ml-auto flex items-center gap-1 text-[10px] font-mono px-2 py-1 rounded-lg border transition-all border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/10"
             >
-              {entry.isDone ? <RotateCcw className="w-3 h-3" /> : <CheckCircle2 className="w-3 h-3" />}
-              {entry.isDone ? 'Reabrir' : 'Concluir'}
+              <CheckCircle2 className="w-3 h-3" />
+              Concluir
+            </button>
+          )}
+          {showToggle && entry.isDone && (
+            <button
+              onClick={() => toggleEntryStatus(entry)}
+              className="ml-auto flex items-center gap-1 text-[10px] font-mono px-2 py-1 rounded-lg border transition-all border-yellow-500/30 text-yellow-400 hover:bg-yellow-500/10"
+            >
+              <RotateCcw className="w-3 h-3" />
+              Reabrir
             </button>
           )}
         </div>
