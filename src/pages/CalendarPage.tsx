@@ -172,7 +172,7 @@ export default function CalendarPage() {
         query = query.eq('assigned_to', user!.id);
       }
       const { data } = await query;
-      return ((data || []) as Task[]).filter(t => t.due_date || t.weekday != null);
+      return ((data || []) as Task[]).filter(t => t.due_date || t.capture_date || t.weekday != null);
     },
     enabled: !!user,
   });
