@@ -118,6 +118,14 @@ export default function CalendarPage() {
   } | null>(null);
   const [captureDate, setCaptureDate] = useState<Date | undefined>(undefined);
 
+  // Time dialog for multiple gravações on same day
+  const [timeDialog, setTimeDialog] = useState<{
+    taskId: string;
+    taskTitle: string;
+    existingCount: number;
+  } | null>(null);
+  const [gravacaoTime, setGravacaoTime] = useState('');
+
   const invalidate = () => {
     qc.invalidateQueries({ queryKey: ['calendar-tasks'] });
     qc.invalidateQueries({ queryKey: ['recurring-completions'] });
