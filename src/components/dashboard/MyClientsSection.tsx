@@ -50,13 +50,13 @@ export function MyClientsSection() {
     enabled: services.length > 0,
   });
 
-  // Count tasks completed this month per client
+  // Count tasks per client and service
   const { data: taskCounts = [] } = useQuery({
     queryKey: ['my-tasks-counts', user?.id, currentMonth],
     queryFn: async () => {
       const { data } = await supabase
         .from('tasks')
-        .select('id, client_name, status')
+        .select('id, client_name, status, title, due_date')
         .eq('assigned_to', user!.id);
       return data || [];
     },
