@@ -4,7 +4,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import {
   ChevronLeft, ChevronRight, CalendarDays, CheckCircle2, XCircle, RotateCcw,
-  Video, Palette, Globe, Megaphone, Bot, Package, GripVertical, Calendar as CalendarIcon
+  Video, Palette, Globe, Megaphone, Bot, Package, GripVertical, Calendar as CalendarIcon,
+  Clapperboard, Send
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
@@ -62,6 +63,8 @@ type PendingService = {
   notes: string | null;
 };
 
+type ServiceDragData = PendingService & { dragType: 'entrega' | 'gravacao' };
+
 function getDaysInMonth(year: number, month: number) {
   return new Date(year, month + 1, 0).getDate();
 }
@@ -105,7 +108,7 @@ export default function CalendarPage() {
   const [selectedMiniDay, setSelectedMiniDay] = useState<number | null>(null);
   const [selectedMainDay, setSelectedMainDay] = useState<number | null>(null);
   const [dragOverDay, setDragOverDay] = useState<number | null>(null);
-
+  const [serviceDragTypes, setServiceDragTypes] = useState<Record<string, 'entrega' | 'gravacao'>>({});
   // Capture date dialog state (videomaker only)
   const [captureDialog, setCaptureDialog] = useState<{
     taskId: string;
@@ -355,7 +358,9 @@ export default function CalendarPage() {
 
   // Drag handlers
   const handleDragStart = (e: DragEvent, service: PendingService) => {
-    e.dataTransfer.setData('service', JSON.stringify(service));
+    const dragType = serviceDragTypes[service.id] || 'entrega';
+    const dragData: ServiceDragData = { ...service, dragType };
+    e.dataTransfer.setData('service', JSON.stringify(dragData));
     e.dataTransfer.effectAllowed = 'copy';
   };
 
@@ -375,18 +380,23 @@ export default function CalendarPage() {
     const raw = e.dataTransfer.getData('service');
     if (!raw) return;
 
-    const service: PendingService = JSON.parse(raw);
+    const service: ServiceDragData = JSON.parse(raw);
     const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+    const isGravacao = service.dragType === 'gravacao';
 
-    // Create the task
+    const taskTitle = isGravacao
+      ? `Gravação: ${service.service_name} — ${service.client_name}`
+      : `${service.service_name} — ${service.client_name}`;
+
     const { data: insertedTasks, error } = await supabase.from('tasks').insert({
-      title: `${service.service_name} — ${service.client_name}`,
+      title: taskTitle,
       status: 'todo',
       priority: 'medium',
       assigned_to: service.responsible_id || user!.id,
       created_by: user!.id,
       client_name: service.client_name,
-      due_date: dateStr,
+      due_date: isGravacao ? null : dateStr,
+      capture_date: isGravacao ? dateStr : null,
     }).select();
 
     if (error) {
@@ -394,15 +404,15 @@ export default function CalendarPage() {
       return;
     }
 
-    toast.success('Tarefa agendada!');
+    toast.success(isGravacao ? 'Gravação agendada!' : 'Entrega agendada!');
     invalidate();
 
-    // If videomaker, prompt for capture date
-    if (isVideomaker && service.service_name.toLowerCase().includes('vídeo') || service.service_name.toLowerCase().includes('video')) {
+    // If it's an entrega of video, prompt for capture date (videomaker)
+    if (!isGravacao && isVideomaker && (service.service_name.toLowerCase().includes('vídeo') || service.service_name.toLowerCase().includes('video'))) {
       if (insertedTasks && insertedTasks.length > 0) {
         setCaptureDialog({
           taskId: insertedTasks[0].id,
-          taskTitle: `${service.service_name} — ${service.client_name}`,
+          taskTitle: taskTitle,
           deliveryDate: dateStr,
         });
       }
@@ -638,19 +648,45 @@ export default function CalendarPage() {
                         const remaining = Math.max(0, qty - s.scheduledCount);
 
                         return (
-                          <div
-                            key={s.id}
-                            draggable
-                            onDragStart={(e) => handleDragStart(e, s)}
-                            className="flex items-center gap-2 px-2.5 py-2 rounded-xl border border-white/8 bg-white/[0.02] cursor-grab active:cursor-grabbing hover:border-brand-orange/20 hover:bg-brand-orange/[0.03] transition-all group"
-                          >
-                            <GripVertical className="w-3 h-3 text-white/10 group-hover:text-white/30 shrink-0" />
-                            <Icon className="w-3.5 h-3.5 text-brand-orange/50 shrink-0" />
-                            <div className="flex-1 min-w-0">
-                              <p className="text-[11px] text-white/60 truncate">{s.service_name}</p>
-                              <p className="text-[9px] font-mono text-white/20">
-                                {s.scheduledCount}/{qty} agendados • <span className="text-orange-400/70">{remaining} restam</span>
-                              </p>
+                          <div key={s.id} className="space-y-1">
+                            <div
+                              draggable
+                              onDragStart={(e) => handleDragStart(e, s)}
+                              className="flex items-center gap-2 px-2.5 py-2 rounded-xl border border-white/8 bg-white/[0.02] cursor-grab active:cursor-grabbing hover:border-brand-orange/20 hover:bg-brand-orange/[0.03] transition-all group"
+                            >
+                              <GripVertical className="w-3 h-3 text-white/10 group-hover:text-white/30 shrink-0" />
+                              <Icon className="w-3.5 h-3.5 text-brand-orange/50 shrink-0" />
+                              <div className="flex-1 min-w-0">
+                                <p className="text-[11px] text-white/60 truncate">{s.service_name}</p>
+                                <p className="text-[9px] font-mono text-white/20">
+                                  {s.scheduledCount}/{qty} agendados • <span className="text-orange-400/70">{remaining} restam</span>
+                                </p>
+                              </div>
+                            </div>
+                            {/* Type selector: Entrega / Gravação */}
+                            <div className="flex gap-1 px-1">
+                              <button
+                                onClick={() => setServiceDragTypes(prev => ({ ...prev, [s.id]: 'entrega' }))}
+                                className={`flex-1 flex items-center justify-center gap-1 py-1 rounded-lg text-[9px] font-mono transition-all border ${
+                                  (serviceDragTypes[s.id] || 'entrega') === 'entrega'
+                                    ? 'border-brand-orange/30 bg-brand-orange/10 text-brand-orange'
+                                    : 'border-white/5 bg-white/[0.01] text-white/25 hover:text-white/40'
+                                }`}
+                              >
+                                <Send className="w-2.5 h-2.5" />
+                                Entrega
+                              </button>
+                              <button
+                                onClick={() => setServiceDragTypes(prev => ({ ...prev, [s.id]: 'gravacao' }))}
+                                className={`flex-1 flex items-center justify-center gap-1 py-1 rounded-lg text-[9px] font-mono transition-all border ${
+                                  serviceDragTypes[s.id] === 'gravacao'
+                                    ? 'border-blue-500/30 bg-blue-500/10 text-blue-400'
+                                    : 'border-white/5 bg-white/[0.01] text-white/25 hover:text-white/40'
+                                }`}
+                              >
+                                <Clapperboard className="w-2.5 h-2.5" />
+                                Gravação
+                              </button>
                             </div>
                           </div>
                         );
