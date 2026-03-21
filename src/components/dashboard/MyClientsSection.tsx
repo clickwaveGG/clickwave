@@ -80,15 +80,28 @@ export function MyClientsSection() {
     return s.completed;
   };
 
-  // Count done tasks per client name
+  // Count done tasks per client name + per service
   const doneTasksByClient = new Map<string, number>();
   const totalTasksByClient = new Map<string, number>();
+  const tasksByServiceId = new Map<string, { total: number; done: number }>();
   taskCounts.forEach((t: any) => {
     if (!t.client_name) return;
     totalTasksByClient.set(t.client_name, (totalTasksByClient.get(t.client_name) || 0) + 1);
     if (t.status === 'done') {
       doneTasksByClient.set(t.client_name, (doneTasksByClient.get(t.client_name) || 0) + 1);
     }
+    // Match tasks to services by title containing service name + matching client
+    const title = (t.title || '').toLowerCase();
+    services.forEach((s: any) => {
+      const sName = s.service_name.toLowerCase();
+      const cName = (s.clients?.name || '').toLowerCase();
+      if (title.includes(sName) && t.client_name?.toLowerCase() === cName) {
+        if (!tasksByServiceId.has(s.id)) tasksByServiceId.set(s.id, { total: 0, done: 0 });
+        const entry = tasksByServiceId.get(s.id)!;
+        entry.total++;
+        if (t.status === 'done') entry.done++;
+      }
+    });
   });
 
   if (clientMap.size === 0) return null;
