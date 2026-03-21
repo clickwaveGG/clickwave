@@ -39,6 +39,7 @@ type CalendarEntry = {
   dateKey: string;
   isRecurring: boolean;
   isDone: boolean;
+  entryType: 'entrega' | 'gravacao' | 'recurring';
 };
 
 type Profile = {
@@ -117,6 +118,14 @@ export default function CalendarPage() {
   } | null>(null);
   const [captureDate, setCaptureDate] = useState<Date | undefined>(undefined);
 
+  // Time dialog for multiple gravações on same day
+  const [timeDialog, setTimeDialog] = useState<{
+    taskId: string;
+    taskTitle: string;
+    existingCount: number;
+  } | null>(null);
+  const [gravacaoTime, setGravacaoTime] = useState('');
+
   const invalidate = () => {
     qc.invalidateQueries({ queryKey: ['calendar-tasks'] });
     qc.invalidateQueries({ queryKey: ['recurring-completions'] });
@@ -163,7 +172,7 @@ export default function CalendarPage() {
         query = query.eq('assigned_to', user!.id);
       }
       const { data } = await query;
-      return ((data || []) as Task[]).filter(t => t.due_date || t.weekday != null);
+      return ((data || []) as Task[]).filter(t => t.due_date || t.capture_date || t.weekday != null);
     },
     enabled: !!user,
   });
@@ -282,10 +291,18 @@ export default function CalendarPage() {
     };
 
     allTasks.forEach(t => {
+      // Tasks with due_date (entregas)
       if (t.due_date && t.weekday == null) {
         const dateKey = t.due_date.slice(0, 10);
-        addEntry(dateKey, { task: t, dateKey, isRecurring: false, isDone: t.status === 'done' });
+        const isGravTitle = t.title.toLowerCase().startsWith('gravação:');
+        addEntry(dateKey, { task: t, dateKey, isRecurring: false, isDone: t.status === 'done', entryType: isGravTitle ? 'gravacao' : 'entrega' });
       }
+      // Tasks with only capture_date (gravações)
+      if (t.capture_date && !t.due_date && t.weekday == null) {
+        const dateKey = t.capture_date.slice(0, 10);
+        addEntry(dateKey, { task: t, dateKey, isRecurring: false, isDone: t.status === 'done', entryType: 'gravacao' });
+      }
+      // Recurring tasks by weekday
       if (t.weekday != null) {
         const createdDate = new Date(t.created_at || '2000-01-01');
         const monthStart = new Date(year, month, 1);
@@ -296,7 +313,7 @@ export default function CalendarPage() {
             if (jsWeekdayToOurs(date.getDay()) === t.weekday) {
               const dateKey = `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
               const isDone = completionSet.has(`${t.id}:${dateKey}`);
-              addEntry(dateKey, { task: t, dateKey, isRecurring: true, isDone });
+              addEntry(dateKey, { task: t, dateKey, isRecurring: true, isDone, entryType: 'recurring' });
               count++;
             }
           }
@@ -384,6 +401,9 @@ export default function CalendarPage() {
     const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
     const isGravacao = service.dragType === 'gravacao';
 
+    // Check existing gravações on this day
+    const existingGravacoes = (entriesByDate[dateStr] || []).filter(e => e.entryType === 'gravacao');
+
     const taskTitle = isGravacao
       ? `Gravação: ${service.service_name} — ${service.client_name}`
       : `${service.service_name} — ${service.client_name}`;
@@ -406,6 +426,16 @@ export default function CalendarPage() {
 
     toast.success(isGravacao ? 'Gravação agendada!' : 'Entrega agendada!');
     invalidate();
+
+    // If gravação and there are already others on this day, prompt for time
+    if (isGravacao && existingGravacoes.length > 0 && insertedTasks && insertedTasks.length > 0) {
+      setTimeDialog({
+        taskId: insertedTasks[0].id,
+        taskTitle: taskTitle,
+        existingCount: existingGravacoes.length + 1,
+      });
+      setGravacaoTime('');
+    }
 
     // If it's an entrega of video, prompt for capture date (videomaker)
     if (!isGravacao && isVideomaker && (service.service_name.toLowerCase().includes('vídeo') || service.service_name.toLowerCase().includes('video'))) {
@@ -445,6 +475,31 @@ export default function CalendarPage() {
       const entries = entriesByDate[dateStr] || [];
       const isDragTarget = dragOverDay === d;
 
+      const gravacaoEntries = entries.filter(e => e.entryType === 'gravacao');
+      const entregaEntries = entries.filter(e => e.entryType === 'entrega' || e.entryType === 'recurring');
+      const hasGravacao = gravacaoEntries.length > 0;
+      const hasEntrega = entregaEntries.length > 0;
+      const hasBoth = hasGravacao && hasEntrega;
+
+      let dayBgClass = 'border-white/5 bg-white/[0.01] hover:bg-white/[0.03]';
+      let dayBgStyle: React.CSSProperties = {};
+
+      if (isDragTarget) {
+        dayBgClass = 'border-brand-orange/50 scale-[1.02]';
+        dayBgStyle = { background: 'rgba(255, 140, 50, 0.1)' };
+      } else if (hasBoth) {
+        dayBgClass = 'border-white/10';
+        dayBgStyle = { background: 'linear-gradient(135deg, rgba(59, 130, 246, 0.08) 50%, rgba(255, 140, 50, 0.08) 50%)' };
+      } else if (hasGravacao) {
+        dayBgClass = 'border-blue-500/20';
+        dayBgStyle = { background: 'rgba(59, 130, 246, 0.08)' };
+      } else if (hasEntrega && !isToday) {
+        dayBgClass = 'border-brand-orange/15';
+        dayBgStyle = { background: 'rgba(255, 140, 50, 0.05)' };
+      } else if (isToday) {
+        dayBgClass = 'border-brand-orange/20 bg-brand-orange/5';
+      }
+
       cells.push(
         <button
           key={d}
@@ -452,36 +507,43 @@ export default function CalendarPage() {
           onDragOver={(e) => handleDayDragOver(e, d)}
           onDragLeave={handleDayDragLeave}
           onDrop={(e) => handleDayDrop(e, d)}
-          className={`min-h-[100px] border p-1.5 transition-all text-left ${
-            isDragTarget
-              ? 'border-brand-orange/50 bg-brand-orange/10 scale-[1.02]'
-              : isToday
-              ? 'border-brand-orange/20 bg-brand-orange/5'
-              : 'border-white/5 bg-white/[0.01] hover:bg-white/[0.03]'
-          } ${selectedMainDay === d ? 'ring-1 ring-brand-orange/40' : ''}`}
+          className={`min-h-[100px] border p-1.5 transition-all text-left relative ${dayBgClass} ${selectedMainDay === d ? 'ring-1 ring-brand-orange/40' : ''}`}
+          style={dayBgStyle}
         >
           <div className="flex items-center justify-between mb-1">
             <span className={`text-[10px] font-mono ${isToday ? 'text-brand-orange font-bold' : 'text-white/40'}`}>
               {d}
             </span>
-            {entries.length > 0 && (
-              <span className="text-[8px] font-mono text-white/20">{entries.length}</span>
-            )}
+            <div className="flex items-center gap-1">
+              {hasGravacao && (
+                <span className="text-[8px] font-mono font-bold text-blue-400 bg-blue-500/20 border border-blue-500/30 rounded px-1 py-px flex items-center gap-0.5">
+                  <Clapperboard className="w-2 h-2" />
+                  {gravacaoEntries.length}
+                </span>
+              )}
+              {hasEntrega && (
+                <span className="text-[8px] font-mono text-white/30">{entregaEntries.length}</span>
+              )}
+            </div>
           </div>
           <div className="space-y-0.5 overflow-hidden max-h-[70px]">
             {entries.slice(0, 3).map((entry, idx) => {
               const assignee = entry.task.assigned_to ? profileMap[entry.task.assigned_to] : null;
               const firstName = assignee?.split(' ')[0] || '?';
-              const priorityClass = PRIORITY_COLORS[entry.task.priority] || PRIORITY_COLORS.medium;
+              const isGrav = entry.entryType === 'gravacao';
+              const priorityClass = isGrav
+                ? 'bg-blue-500/20 text-blue-300 border-blue-500/30'
+                : entry.isDone
+                ? 'opacity-40 line-through border-emerald-500/20 bg-emerald-500/[0.05] text-emerald-300/60'
+                : (PRIORITY_COLORS[entry.task.priority] || PRIORITY_COLORS.medium);
 
               return (
                 <div
                   key={`${entry.task.id}-${idx}`}
-                  className={`flex items-center gap-1 px-1 py-0.5 rounded text-[9px] leading-tight border ${
-                    entry.isDone ? 'opacity-40 line-through border-emerald-500/20 bg-emerald-500/[0.05] text-emerald-300/60' : priorityClass
-                  }`}
+                  className={`flex items-center gap-1 px-1 py-0.5 rounded text-[9px] leading-tight border ${priorityClass}`}
                 >
-                  {entry.isDone && <CheckCircle2 className="w-2 h-2 text-emerald-400 shrink-0" />}
+                  {isGrav && <Clapperboard className="w-2 h-2 text-blue-400 shrink-0" />}
+                  {entry.isDone && !isGrav && <CheckCircle2 className="w-2 h-2 text-emerald-400 shrink-0" />}
                   <span className="truncate flex-1">{entry.task.title}</span>
                   <span className="text-white/20 shrink-0">{firstName}</span>
                 </div>
@@ -908,6 +970,56 @@ export default function CalendarPage() {
                 className="flex-1 py-2 rounded-xl border border-brand-orange/30 bg-brand-orange/10 text-brand-orange text-xs font-mono hover:bg-brand-orange/20 transition-colors disabled:opacity-30"
               >
                 Confirmar gravação
+              </button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Time Dialog for multiple gravações */}
+      <Dialog open={!!timeDialog} onOpenChange={(open) => { if (!open) { setTimeDialog(null); setGravacaoTime(''); } }}>
+        <DialogContent className="bg-brand-black border-white/10 max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="text-white font-serif text-lg flex items-center gap-2">
+              <Clapperboard className="w-5 h-5 text-blue-400" />
+              Horário da Gravação
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <p className="text-xs text-white/40 font-mono">
+              {timeDialog?.taskTitle}
+            </p>
+            <p className="text-xs text-white/30">
+              Existem <span className="text-blue-400 font-bold">{timeDialog?.existingCount}</span> gravações neste dia. Defina o horário para organizar a agenda.
+            </p>
+            <input
+              type="time"
+              value={gravacaoTime}
+              onChange={(e) => setGravacaoTime(e.target.value)}
+              className="w-full px-4 py-3 rounded-xl border border-white/10 bg-white/[0.03] text-white text-sm font-mono focus:outline-none focus:border-blue-500/40"
+            />
+            <div className="flex gap-2">
+              <button
+                onClick={() => { setTimeDialog(null); setGravacaoTime(''); }}
+                className="flex-1 py-2 rounded-xl border border-white/10 text-white/40 text-xs font-mono hover:bg-white/5 transition-colors"
+              >
+                Pular
+              </button>
+              <button
+                onClick={async () => {
+                  if (!timeDialog || !gravacaoTime) return;
+                  await supabase.from('tasks').update({
+                    description: `Horário: ${gravacaoTime}`,
+                  }).eq('id', timeDialog.taskId);
+                  toast.success('Horário definido!');
+                  setTimeDialog(null);
+                  setGravacaoTime('');
+                  invalidate();
+                }}
+                disabled={!gravacaoTime}
+                className="flex-1 py-2 rounded-xl border border-blue-500/30 bg-blue-500/10 text-blue-400 text-xs font-mono hover:bg-blue-500/20 transition-colors disabled:opacity-30"
+              >
+                Confirmar horário
               </button>
             </div>
           </div>
