@@ -167,6 +167,9 @@ export function MyClientsSection() {
                         const isDone = isServiceDone(s);
                         const Icon = getServiceIcon(s.service_name);
                         const qty = s.quantity_per_month;
+                        const serviceTasks = tasksByServiceId.get(s.id);
+                        const effectiveQty = qty || (serviceTasks?.total || 0);
+                        const effectiveDone = serviceTasks?.done || 0;
                         return (
                           <div key={s.id} className="flex items-center gap-2">
                             {isDone
@@ -177,9 +180,9 @@ export function MyClientsSection() {
                             <span className={`text-xs truncate ${isDone ? 'text-white/30 line-through' : 'text-white/60'}`}>
                               {s.service_name}
                             </span>
-                            {qty && !isDone && (
+                            {effectiveQty > 0 && !isDone && (
                               <span className="text-[9px] font-mono text-orange-400/60 ml-auto shrink-0">
-                                0/{qty}
+                                {effectiveDone}/{effectiveQty}
                               </span>
                             )}
                           </div>
