@@ -242,7 +242,7 @@ export default function Index() {
               {[
                 { label: "Inteligência de Dados", status: "ATIVO" },
                 { label: "Design de Impacto", status: "ATIVO" },
-                { label: "Tráfego de Elite", status: "STANDBY" },
+                { label: "Tráfego de Elite", status: "ATIVO" },
                 { label: "Copywriting Bélico", status: "ATIVO" }
               ].map((item, i) => (
                 <li key={i} className="flex items-center justify-between group/item cursor-default">
